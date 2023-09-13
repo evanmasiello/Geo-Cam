@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Geo Cam</title>
+    <link rel="icon" href="./assets/Icon.png">
+  </head>
+  <body style="margin: 0px 0px 0px 0px; text-align: center;">
+    <div id="header" style="border-bottom: 0.5vw solid var(--accentColor);position: sticky;top: 0;background-color: var(--primaryColor);">
+    <h2 style="margin: 0px 0px 0px 0px; padding: 0px 0px 0px 0px;">Use Geo Cam:</h2></div><br>
+    <a href="https://geocam.app" target="_blank"><img src="./assets/geoGram.png" style="width: 50%; border: solid 0.5vw black">
+    <button>Online Version</button></a><br><br>
+    <a href="https://apps.apple.com/us/app/geogram-io/id1632300343?platform=iphone" target="_blank"><img src="./assets/Icon.png" style="width: 50%; border: solid 0.5vw white">
+    <button>App Store</button></a><br><br>
+    <a href="https://play.google.com/store/apps/details?id=io.geogram.application.myapplication" target="_blank"><img src="./assets/Icon.png" style="width: 50%; border: solid 0.5vw white">
+    <button>Google Play Store</button></a>
+    <br><br><br><br><br>
+    <style>
+    img {
+      border-radius: 15%;
+    }
+    :root {
+      --primaryColor: white;
+      --accentColor: black;
+      --optionsContrastColor: #f3f3f399;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --primaryColor: #171717;
+        --accentColor: white;
+        --optionsContrastColor: #f3f3f399;
+      }
+    }
+    html {
+        color: var(--accentColor);
+        background-color: var(--primaryColor);
+        font-size: 6vw;
+    }
+    button {
+        background-color: var(--primaryColor);
+        border: solid 0.5vw var(--accentColor);
+        color: var(--accentColor);
+        width: 50%;
+        font-size: 5vw;
+        border-radius: 3vw;
+    }
+    a {
+        color: var(--accentColor);
+        text-decoration: none;
+    }
+    </style>
+    <script>
+    
+    var mobileUser; 
+
+if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    mobileUser = true;
+} else {
+    mobileUser = false;
+}
+
+var isInIframe = false;
+
+if ( window.location !== window.parent.location ) {
+  isInIframe = true;
+} else {
+  isInIframe = false;
+}
+    
+    const queryString = window.location.search;
+const urlParams = new URLSearchParams(queryString);
+    
+    var srcUrlParam = urlParams.get("mode");
+var srcCookie = "";
+
+var shouldBePc = window.innerHeight < window.innerWidth && urlParams.get("src") != "pcPage" && !mobileUser && srcCookie != "mobile" && srcUrlParam != "mobile" && !isInIframe;
+
+var hasVisited = "";
+var session = "";
+
+if (shouldBePc) {
+    var path = window.location.pathname;
+    var page = path.split("/").pop();
+    
+    window.location.href = 'pc?site=' + page;
+}
+    </script>
+  </body>
+</html>

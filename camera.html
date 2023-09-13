@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html id="html">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Geo Cam</title>
+    <link href="./css/styleV84.css" rel="stylesheet" type="text/css" />
+    <link rel="icon" href="./assets/Icon.png">
+  </head>
+  <body>
+  <div id="whiteCover" style="display: none;">
+  </div>
+  <div id="blocker" class="heading sticky">
+  </div>
+  <div id="header" class="heading sticky">
+    <div id="leftIcon" class="headerDiv"><i class="fa-solid fa-circle-info headerIcon" onclick="showAbout()"></i><i class="fa-solid fa-moon headerIcon" id="colorMode" onclick="changeColorMode()"></i></div>
+    <div id="headerDivMain" class="headerDiv"><h5 style="font-size:6vw; text-align: center; margin: 0;">Geo <i class='fas'>&#xf3c5;</i> Cam</h5></div>
+    <div id="rightIcon" class="headerDiv"><i id="userIcon" onclick="showLogin()" class="fa-solid fa-user headerIcon" style="margin-left: 6.5vw;"></i></div>
+  </div>
+  <div id="header2" class="heading2"><h5 style="font-size:6vw; text-align: center; margin: 0;">Geo <i class='fas'>&#xf3c5;</i> Cam</h5></div>
+  <div id=content>
+  <div id="guidelinesDiv" class="popup" style="display: none;">
+    <div id="guidelinesTitleDiv"><h2 id="guidelinesTitle">Guidelines</h2><i id="xButton" class="fa-solid fa-xmark" onclick="showGuidelines()"></i></div>
+<div id="guidelinesContent">
+    <p id="selectText">By Uploading Images to GeoCam You:</p>
+    <ul id="guidlinesList">
+  <li>Grant Geo Cam use of any images you upload</li>
+  <li>Allow Geo Cam to store any images you upload and the location where they were taken</li>
+  <li>Agree to not upload images containing explicit or illegal content</li>
+<li>Agree to not upload images of others without their consent</li>
+</ul>
+    <p>Click <a href="https://evanmasiello.com/geocam/termsOfUse" target="_blank">here</a> to view full terms of service.</p>
+    <p><input type="checkbox" id="rememberAccept" name="accept" value="false"> <label for="rememberAccept">Remember My Agreement</label></p><br>
+    <button id="agreeButton" onclick="agreeToGuidelines()" class="accountButtons">Agree to Guidelines</button>
+    </div>
+  </div>
+  <div id="loginDiv" class="popup" style="display: none;">
+    <div id="loginTitleDiv"><h2 id="loginTitle">Account</h2><i id="xButton" class="fa-solid fa-xmark" onclick="showLogin()"></i></div>
+<div id="loginContent">
+    <p id="loginOptions" class="fourVW"><span id="loginText" onclick="makeFormLogin()" style="text-decoration: underline;">Login</span> or <span id="createText" onclick="makeFormCreate()">Create Account</span></p>
+    <div id="loginFields" style="display: none;"><br>
+        <p class="halfFields">Username: <input class="halfFields" type="text" name="username" id="unameLogin"></p><br>
+        <p class="halfFields">Password: <input class="halfFields" type="password" name="password" id="passLogin"></p><br>
+        <p id="forgotPassLink" onclick="showForgotPass()" class="fourVW">Forgot Username or Password?</p><br>
+        <button class="fieldButton" onclick="loginAccount()">Log In</button>
+    </div>
+    <div id="createFields"><br>
+        <p class="halfFields">Username: <input class="halfFields" type="text" name="username" id="unameCreate"></p><br>
+        <p class="halfFields">Email: <input class="halfFields" type="email" name="email" id="emailCreate"></p><br>
+        <p class="halfFields">Password: <input class="halfFields" type="password" name="password" id="passCreate"></p><br><p style="text-align: center;"><input type="checkbox" id="agreeTerms" name="agreeTerms" value="terms">
+        <label for="agreeTerms"> I agree to the <a href="https://evanmasiello.com/geocam/termsOfUse" target="_blank" style="text-decoration: underline;">Terms Of Use</a></label></p><br>
+        <button class="fieldButton" onclick="createAccount()">Create</button>
+    </div>
+    <div id="accountView" style="display: none;">
+        <p>Welcome <span id="name"></span>, you've made <span id="postCount"></span> posts, liked <span id="likeCount"></span> posts, and commented <span id="commentCount"></span> times.</p><br>
+        <div id="emailVerify" style="display: none;"><button class="accountButtons" onclick="resendEmailVerify()">Resend Email Verification</button><br><br></div>
+        <button id="showInfoButton" class="accountButtons" onclick="showInfo()">Edit Info</button><br><br>
+        <span id="editInfo" style="display: none;">
+        <button class="editAccountButtons" onclick="changeName()">Change Username</button><br><br>
+        <button class="editAccountButtons" onclick="changePass()">Change Password</button><br><br>
+        <button class="editAccountButtons" onclick="changeEmail()">Change Email</button><br><br></span>
+        <button class="accountButtons" onclick="manageFollowed()">Manage Following</button><br><br>
+        <button class="accountButtons" onclick="manageBlocked()">Manage Blocked</button><br><br>
+        <button class="accountButtons" onclick="deleteAccount()">Delete Account</button><br><br>
+        <br>
+        <button class="fieldButton" onclick="logOut()">Log Out</button>
+    </div>
+    <div id="forgotPass" style="display: none;">
+        <p>Please enter your email to receive your username and a temporary password.</p><br>
+        <p class="halfFields">Email: <input class="halfFields" type="email" name="email" id="emailForgot"></p><br>
+        <button class="buttonLeft" onclick="forgotPassword()">Send</button><button class="buttonRight" onclick="makeFormLogin()">Cancel</button>
+    </div>
+<div id="manageBlocked" style="display: none;">
+        <p>You can block users by entering their username below</p><br>
+        <p class="halfFields">Name: <input class="halfFields" type="text" name="username" id="nameManageBlock"></p><br>
+        <button class="accountButtons" onclick="blockUserByName()">Block</button><br><br>
+        <p>You can unblock users using the list below</p><br>
+        <div id="listOfBlocked">
+        </div><br>
+        <button class="accountButtons" onclick="showLoggedIn()">Go Back</button>
+    </div>
+    <div id="manageFollowed" style="display: none;">
+        <p>You can follow users by entering their username below</p><br>
+        <p class="halfFields">Name: <input class="halfFields" type="text" name="username" id="nameManageFollow"></p><br>
+        <button class="accountButtons" onclick="followUserByName()">Follow</button><br><br>
+        <p>You can unfollow users using the list below</p><br>
+        <div id="listOfFollowed"></div><br>
+        <button class="accountButtons" onclick="showLoggedIn()">Go Back</button>
+    </div>
+    <div id="resetName" style="display: none;">
+        <p>Please enter the username you wish to use and your password to change your username.</p><br>
+        <p class="halfFields">New Username: <input class="halfFields" type="text" name="username" id="unameNew"></p><br>
+        <p class="halfFields">Password: <input class="halfFields" type="password" name="password" id="passNewName"></p><br>
+        <button class="buttonLeft" onclick="execChangeName()">Submit</button><button class="buttonRight" onclick="showLoggedIn()">Cancel</button>
+    </div>
+    <div id="resetPass" style="display: none;">
+        <p>Please enter the password you wish to use and your old password to update it.</p><br>
+        <p class="halfFields">New Password: <input class="halfFields" type="password" name="password" id="passNew"></p><br>
+        <p class="halfFields">Old Password: <input class="halfFields" type="password" name="password" id="passOld"></p><br>
+        <button class="buttonLeft" onclick="execChangePass()">Submit</button><button class="buttonRight" onclick="showLoggedIn()">Cancel</button>
+    </div>
+    <div id="resetMail" style="display: none;">
+        <p>Please enter the email you wish to use and your password to change your email.</p><br>
+        <p class="halfFields">New Email: <input class="halfFields" type="text" name="mailNew" id="mailNew"></p><br>
+        <p class="halfFields">Password: <input class="halfFields" type="password" name="password" id="passNewMail"></p><br>
+        <button class="buttonLeft" onclick="execChangeMail()">Submit</button><button class="buttonRight" onclick="showLoggedIn()">Cancel</button>
+    </div>
+    <div id="deleteAccount" style="display: none;">
+        <p><strong>Please enter you password then slide the slider all the way to the right to delete your account.</strong> Be aware that all of your data will be deleted and this process can not be reversed.</p><br>
+        <p class="halfFields">Password: <input class="halfFields" type="password" name="password" id="passDelete"></p><br>
+        <input id="deleteSlider" onchange="tryToDelete(this.value)" type="range" min=0 max=100 value=2><br><button id="cancelDelete" class="accountButtons" onclick="showLoggedIn()">Cancel</button>
+    </div>
+    </div>
+  </div>
+  <div id="aboutDiv" class="popup" style="display: none;">
+    <div id="aboutTitleDiv"><h2 id="aboutTitle">About</h2><i id="xButton" class="fa-solid fa-xmark" onclick="showAbout()"></i></div>
+<div id="aboutContent">
+    <p>Geo Cam is a photo sharing platform that is focused on allowing users to engage with their local communities.</p>
+    <br><button class="accountButtons" onclick="showWelcome()">Re-display Welcome</button><br><br><a href="https://discord.gg/ygYyTbwwEm" target="blank_"><button class="accountButtons">Join The Discord!</button></a><br><br><a href="https://evanmasiello.com/geocamShop" target="blank_"><button class="accountButtons">Visit The Shop!</button></a><br><br><a href="https://evanmasiello.com/geocam/privacyPolicy" target="blank_"><button class="accountButtons">View Privacy Policy</button></a><br><br><a href="https://evanmasiello.com/geocam/termsOfUse" target="blank_"><button class="accountButtons">View Terms Of Use</button></a><br><br><a href="https://evanmasiello.com/geocam/support" target="blank_"><button class="accountButtons">Request Support</button></a><br>
+    </div>
+  </div>
+  <div id="welcomeDiv" class="popup" style="display: none;">
+    <div id="welcomeTitleDiv"><h2 id="welcomeTitle">Welcome to Geo Cam!</h2><i id="xButton" class="fa-solid fa-xmark" onclick="hideWelcome()"></i></div>
+<div id="welcomeContent">
+    <p id="welcomeBody">Geo Cam is a photo sharing app that strives to allow you to better engage with the people around you.<br><br><span class="fourVW">You can see pictures posted near where you are and can post pictures for people near you to see.<br><br>You can like and comment on pictures to engage with other users. We hope you have fun trying it out!</span></p>
+    <br><button id="welcomeButton" onclick="hideWelcome()">Let's go!</button>
+    </div>
+  </div>
+  <div id="filtersDiv" class="popup" style="display: none;">
+    <div id="filterTitleDiv"><h2 id="zoomSettingsTitle" >Zoom Settings</h2><i id="xButton" class="fa-solid fa-xmark" onclick="showFilters()"></i></div>
+<div id="zoomContentDiv">
+    <strong><p style="text-align: center;margin-bottom:0px;font-size:5vw;">Zoom In:</p></strong><br>
+    <input id="zoomRange" type="range" min="0" max="200" value="0" onchange="zoomCam(this)" style="--webkitProgressPercent:0%;">
+    </div>
+  </div>
+      <!--camera-->
+  <div id="cameraContent" style="">
+     <p class="userText" style="top: 4vw;right: 3.4%;"><span id="userNameDisplay"></span>  <i class="fa-solid fa-user"></i></p>
+  <div id="stage">
+    <div id="playerHolder" width=100%>
+        <video id="player" autoplay width=100%></video>
+    </div>
+  </div>
+  <div id="loadingOverlay" class="loader overlay" style="display: none;"></div>
+  <canvas id="canvas" width=1080px height=1080px style="display: none; width: 100%;"></canvas>
+  </div>
+  <!--<br>
+  <button id="toggle" onclick="toggleCamera()">Toggle Camera</button>-->
+  <br>
+    <div id="takeButtons">
+    <div class="thirds">
+      <i id="flip" onclick="toggleCamera()" class="fa-solid fa-camera-rotate icon"></i>
+    </div>
+    <div class="thirds">
+      <i id="capture" onclick="takePhoto()" class="fa-regular fa-circle"></i>
+    </div>
+    <div class="thirds">
+      <i id="invert" onclick="invertCam()" class="fa-solid fa-arrow-right-arrow-left icon"></i>
+    </div>
+    <div id="extraButtons">
+    <i id="timerButton" class="fa-regular fa-clock" onclick="clickTimerBttn()"></i><i id="flashButton" class="fa-solid fa-bolt" onclick="clickFlash()"></i><i id="zoomIcon" class="fa-solid fa-magnifying-glass-plus headerIcon" onclick="showFilters()"></i>
+    </div>
+  </div>
+  <div id="takingText" style="display: none;">
+      <h2 id="takingTextWords">Taking Photo...</h2>
+  </div>
+  <div id="uploadButtons" style="display: none;">
+    <p id="editPostVisTextCam">Show this post to: <select id="editPostVisSelectCam" name="Visibility">
+        <option value="all">Everyone</option>
+        <option value="following">Only people I follow</option>
+      </select></p>
+    <div id="uploadDiv" class="thirds">
+        <i id="reset" onclick="resetCam()" class="fa-solid fa-arrow-left icon" style="
+        text-align: right;
+    "></i>
+      <i id="upload" onclick="uploadFile()" class="fa-solid fa-arrow-up-from-bracket icon"></i>
+    </div>
+    <p id="guidelineFooterText">By Uploading Images You Agree to <span style="text-decoration: underline;" onclick="showGuidelines()">Our Guidelines</span></p>
+  </div>
+  <br>
+  </div>
+  <div id="offsetDiv" style="height: 25vh"><br>
+  </div>
+  <div id="footer" class="stickyFoot">
+      <div class="left footerSubDivide">
+        <a class="footLink selectedPage" href=""><i class="fa-solid fa-camera"></i><br></a>
+      </div>
+      <div class="right footerSubDivide footerLinkR footerLink">
+        <a class="footLink" href="./"><i class="fa-solid fa-house"></i><br></a>
+      </div>
+    </div>
+    <script src="./js/sharedScriptV20.js"></script>
+    <script src="./js/cameraScriptV21.js"></script>
+    <script src="https://kit.fontawesome.com/7ef045b943.js" crossorigin="anonymous"></script>
+  </body>
+</html>
