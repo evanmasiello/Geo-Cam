@@ -234,7 +234,7 @@ function showAbout() {
 }
 
 function sendUpdate(msg) {
-    var url = "https://discord.com/api/webhooks/988448246491914250/VEX49QCLn7jHabWDmExWFpGUTCcvjqd3Tc4OoveCvHEUQKLdYU9_6Ad8sqvdWxff-WVw";
+    var url = "";
     
     var message = {
         "content": msg
