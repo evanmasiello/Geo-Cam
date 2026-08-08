@@ -449,7 +449,11 @@ function showPosts() {
 
                     //console.log("server response: " + xmlhttp.responseText);
                     
-                    imageArray = eval(xmlhttp.responseText);
+                    try {
+                        imageArray = JSON.parse(xmlhttp.responseText);
+                    } catch (e) {
+                        imageArray = [];
+                    }
                     
                     accessCode = imageArray[0].accessCode;
                     
@@ -606,7 +610,11 @@ function showPostsByMe() {
                     //document.getElementById("offsetDiv").style.display = "block";
                 } else {
                     
-                    imageArray = eval(xmlhttp.responseText);
+                    try {
+                        imageArray = JSON.parse(xmlhttp.responseText);
+                    } catch (e) {
+                        imageArray = [];
+                    }
                     
                     accessCode = imageArray[0].accessCode;
 
