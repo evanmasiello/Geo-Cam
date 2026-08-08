@@ -75,7 +75,11 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["v
                         $savePostId;
                         
                         for ($x=0; $x < count($posts); $x++) {
-                            if ($posts[$x]->id == $postId) { 
+                            if ($posts[$x]->id == $postId) {
+                                if ($posts[$x]->user != $uID) {
+                                    $response = "notYourPost";
+                                    break;
+                                }
                                 if ($_POST["vis"] == "following") {
                                     $posts[$x]->visibility = "following";
                                     $visVar = "following";
