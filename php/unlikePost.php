@@ -72,7 +72,13 @@ if(isset($_POST["id"]) and isset($_POST["session"]) and file_exists("sessions.js
         $filename = "../posts/posts.json";
         $posts = json_decode(file_get_contents($filename));
         $posts = array_values($posts);
-        $posts[$id]->likes = $posts[$id]->likes - 1;
+        $postIndex = -1;
+        for ($p=0; $p < count($posts); $p++) {
+            if ($posts[$p]->id == $id) { $postIndex = $p; break; }
+        }
+        if ($postIndex >= 0) {
+            $posts[$postIndex]->likes = $posts[$postIndex]->likes - 1;
+        }
         
         //if ($posts[$id]->likes < 0) $posts[$id]->likes = 0;
         
