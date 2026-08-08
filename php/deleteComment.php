@@ -67,29 +67,29 @@ if(isset($_POST["id"]) and isset($_POST["commentId"]) and isset($_POST["session"
     
         $posts = array_values($posts);
         
-        $hasBeenFound = false;
+        $commentFound = false;
         
-        for ($i=0; $i < count($posts) && !$hasBeenFound; $i++) {
+        for ($i=0; $i < count($posts) && !$commentFound; $i++) {
             if ($posts[$i]->id == $id) {
                 if ($posts[$i]->comments != null) {
                     $comments = json_decode($posts[$i]->comments);
-                    for ($x=0; $x < count($comments) && !$hasBeenFound; $x++) {
+                    for ($x=0; $x < count($comments) && !$commentFound; $x++) {
                         if ($comments[$x]->id == $commentId) {
+                            $commentFound = true;
                             if ($comments[$x]->user != $uID) {
                                 $response = "notYourComment";
-                                break 2;
+                            } else {
+                                $comments[$x]->hidden = true;
+                                $commentAuthor = $comments[$x]->user;
+                                $posts[$i]->comments = json_encode($comments);
                             }
-                            $comments[$x]->hidden = true;
-                            $commentAuthor = $comments[$x]->user;
-                            $posts[$i]->comments = json_encode($comments);
-                            $hasBeenFound = true;
                         }
                     }
                 }
             }
         }
 
-        if ($hasBeenFound) {
+        if ($commentFound && $response != "notYourComment") {
             for ($l=0; $l < count($users); $l++) {
                 if ($users[$l]->id == $commentAuthor) {
                     if ($users[$l]->commentCount != null) {
