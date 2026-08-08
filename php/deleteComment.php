@@ -75,7 +75,12 @@ if(isset($_POST["id"]) and isset($_POST["commentId"]) and isset($_POST["session"
                     $comments = json_decode($posts[$i]->comments);
                     for ($x=0; $x < count($comments) && !$hasBeenFound; $x++) {
                         if ($comments[$x]->id == $commentId) {
+                            if ($comments[$x]->user != $uID) {
+                                $response = "notYourComment";
+                                break 2;
+                            }
                             $comments[$x]->hidden = true;
+                            $commentAuthor = $comments[$x]->user;
                             $posts[$i]->comments = json_encode($comments);
                             $hasBeenFound = true;
                         }
@@ -83,28 +88,30 @@ if(isset($_POST["id"]) and isset($_POST["commentId"]) and isset($_POST["session"
                 }
             }
         }
-        
+
         if ($hasBeenFound) {
             for ($l=0; $l < count($users); $l++) {
-                if ($users[$l]->id == $uID) {
+                if ($users[$l]->id == $commentAuthor) {
                     if ($users[$l]->commentCount != null) {
-                        $users[$l]->commentCount--;
+                        $users[$l]->commentCount = max(0, $users[$l]->commentCount - 1);
                     } else {
                         $users[$l]->commentCount = 0;
                     }
                 }
             }
-        }
-    
-        $json = json_encode($posts);
-        
-        if (file_put_contents($filename, $json) && file_put_contents("users.json", json_encode($users))) {
-                $response = 1;   
-                sendMessage("Oh nah! $uName just deleted a comment!");   
+
+            $json = json_encode($posts);
+
+            if (file_put_contents($filename, $json) && file_put_contents("users.json", json_encode($users))) {
+                $response = 1;
+                sendMessage("Oh nah! $uName just deleted a comment!");
                 logAction($uName . " (user id " . $uID . ") deleted comment #$commentId on post #" . $id);
             } else {
                 $response = 0;
             }
+        } else if ($response != "notYourComment") {
+            $response = 0;
+        }
             
         } else {
             $response = 0;
