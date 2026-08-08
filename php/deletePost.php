@@ -75,9 +75,17 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
                         $savePostId;
                         
                         for ($x=0; $x < count($posts); $x++) {
-                            if ($posts[$x]->id == $postId && $posts[$x]->hidden != true) { 
+                            if ($posts[$x]->id == $postId && $posts[$x]->hidden != true) {
+                                if ($posts[$x]->user != $uID) {
+                                    $response = "notYourPost";
+                                    break;
+                                }
                                 $posts[$x]->hidden = true;
-                                $users[$userIdSave]->postCount = $users[$userIdSave]->postCount - 1;
+                                for ($uc=0; $uc < count($users); $uc++) {
+                                    if ($users[$uc]->id == $posts[$x]->user && $users[$uc]->postCount != null) {
+                                        $users[$uc]->postCount = max(0, intval($users[$uc]->postCount) - 1);
+                                    }
+                                }
                                 $deleteValid = true;
                                 $savePostId = $posts[$x]->id;
                             }
