@@ -396,7 +396,7 @@ function checkSession(shouldUpdate) {
                         
                         console.log("in try");
                         
-                        var postMode = "norm";
+                        postMode = "norm";
                         
                         likedPosts = JSON.parse(userObj.likes);
                         
