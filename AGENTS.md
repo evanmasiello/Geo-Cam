@@ -24,6 +24,18 @@ code and when refactoring; do not "fix" working code solely to satisfy them.
   root, replacing the locking scheme), open a discussion RFC PR (a `docs/rfc/*.md`
   proposal) instead of a code change, so the approach can be agreed first.
 
+## Testing & CI
+
+- `tests/lint-php.sh` runs `php -l` over `php/*.php`; `tests/lint-js.sh` runs
+  `node --check` over `js/*.js`. `tests/run.sh` runs both and exits non-zero on
+  any failure. Each script skips gracefully if its tool is missing, so they are
+  safe to run locally.
+- CI runs on every push/PR to `main` via `.github/workflows/ci.yml` on a
+  GitHub-hosted `ubuntu-latest` runner (no manual runner configuration needed):
+  it installs PHP + Node and executes `bash tests/run.sh`.
+- Scope is currently syntax/compilation only (no unit tests). When changing
+  behavior, extend `tests/` rather than relying on manual reasoning alone.
+
 ## Security posture (context for reviews)
 
 This app is a flat-file JSON store (no SQL). Treat these as sensitive:
@@ -77,5 +89,6 @@ framework and no build step**. All persistence is a **flat-file JSON store**
 - Concurrency is serialized by a `status.txt` "OPEN"/"CLOSED" file mutex that
   is known-broken (infinite waits, dead `shutdown()` handlers, lock stealing) —
   see the `flock()` RFC.
-- No test suite or linter is configured; changes are verified by reading the
-  source and reasoning about behavior.
+- Basic lint/compilation checks live in `tests/` (run `bash tests/run.sh`); they
+  are also enforced in CI on every push/PR to `main` (see
+  `.github/workflows/ci.yml`). Details in **Testing & CI** above.
