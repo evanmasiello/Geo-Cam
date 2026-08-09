@@ -21,7 +21,7 @@ $postUsers = array();
 
 $users = json_decode(file_get_contents("users.json"));
 
-for ($i = count($posts); $i >= 0; $i--) {
+for ($i = count($posts) - 1; $i >= 0; $i--) {
     //if (distance($_POST["lat"], $_POST["long"], $post->lat, $post->long) > 1) {
     
     //error_log("distance is " . distance($latPost, $longPost, $posts[$i]->lat, $posts[$i]->long));
@@ -120,7 +120,7 @@ if ($postCount < 50 || count($postUsers) < 3) {
   error_log("theres less than 50 !!");
     
     usort($posts,function($first,$second){
-        return $first->distance > $second->distance;
+        return $first->distance <=> $second->distance;
     });
     
     $distanceCheck = 2;
@@ -144,7 +144,7 @@ if ($postCount < 50 || count($postUsers) < 3) {
                 $userVar = "";
                 
                 if (!in_array($posts[$x]->user, $postUsers)) {
-                    array_push($postUsers, $posts[$i]->user);
+                    array_push($postUsers, $posts[$x]->user);
                 }
                 
                 for ($c=0; $c < count($users); $c++) {
@@ -190,7 +190,7 @@ if ($postCount < 50 || count($postUsers) < 3) {
                 
                 array_push($finalPosts, $posts[$x]);
                 
-                if ($posts[$i]->hidden != true && $posts[$i]->visibility != "following") {
+                if ($posts[$x]->hidden != true && $posts[$x]->visibility != "following") {
                     $postCount++;
                 }
                 
@@ -227,7 +227,7 @@ if (count($finalPosts) > 0) {
     //error_log("min time start is " . $minTime);
    //error_log("finalPostCount Is " . count($finalPosts));
     
-    for ($i = count($finalPosts); $i >= 0; $i--) {
+    for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
         $timeTotal = $timeTotal + ($finalPosts[$i]->time / 10000);
         $distanceTotal = $distanceTotal + $finalPosts[$i]->distance;
         $likesTotal = $likesTotal + $finalPosts[$i]->likes;
@@ -245,7 +245,7 @@ if (count($finalPosts) > 0) {
     if ($distanceMean == 0) $distanceMean = 0.0001;
     if ($likesMean == 0) $likesMean = 0.0001;
     
-    for ($i = count($finalPosts); $i >= 0; $i--) {
+    for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
         $timeTotal = $timeTotal + ($finalPosts[$i]->time / 10000);
         $distanceTotal = $distanceTotal + $finalPosts[$i]->distance;
         $likesTotal = $likesTotal + $finalPosts[$i]->likes;
@@ -255,7 +255,7 @@ if (count($finalPosts) > 0) {
     $distDevTotal = 0;
     $likesDevTotal = 0;
 
-    for ($i = count($finalPosts); $i >= 0; $i--) {
+    for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
         $timeDevTotal += abs(($finalPosts[$i]->time / 10000) - $timeMean);
         $distDevTotal += abs($finalPosts[$i]->distance - $distanceMean);
         $likesDevTotal += abs($finalPosts[$i]->likes - $likesMean);
@@ -273,7 +273,7 @@ if (count($finalPosts) > 0) {
    
    $finalPosts = array_values($finalPosts);
 
-    for ($i = count($finalPosts); $i >= 0; $i--) {
+    for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
         if (!is_null($finalPosts[$i])) {
             $finalPosts[$i]->zTime = -(($finalPosts[$i]->time / 10000 - $timeMean) / $timeStDev);
             $finalPosts[$i]->zDistance = ($finalPosts[$i]->distance - $distanceMean) / $distStDev;
