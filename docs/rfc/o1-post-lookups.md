@@ -80,6 +80,86 @@ Replace the flat-file JSON store with a single SQLite database.
    meaningfully reduces I/O and also solves the locking / injection / consistency
    problems in one move?
 
+## Alternatives considered
+
+Flat-file PHP libraries that were evaluated:
+
+- **noneDB** — JSONL with byte-offset indexing for O(1) key lookups and an
+  R-tree for geospatial queries (good fit for a geo app). Atomic `flock`-based
+  locking. Still rewrites whole documents under the hood, so the read/write
+  cost is unchanged; adds a dependency to evaluate/maintain.
+- **SleekDB** — multi-file JSON store with a query cache. Cache invalidation
+  is the hard part; the cache-first model is better for read-heavy than for
+  the write-heavy social model here.
+- **FlatFileDB / JsonDB** — indexed JSON with transaction logging. Effectively
+  "current codebase but with a library." The library still rewrites whole files,
+  so the fundamental O(n) read/write cost remains.
+- **storh** — append-only segmented log plus an optional SQLite mirror. More
+  complex than needed for this project; the mirror path is essentially option D
+  (SQLite) with extra machinery.
+
+These are viable if the goal is "stay flat-file but fix correctness." SQLite
+(option D) is the only option that meaningfully reduces I/O cost while also
+solving locking, injection, and consistency.
+
+## SQLite integration notes
+
+### Do you need to run it?
+No. SQLite is **serverless** — there is no daemon or service to start. PHP's
+`PDO_SQLITE` extension reads and writes a single file directly, exactly like
+`file_get_contents`/`file_put_contents`, but with transactions, prepared
+statements, and a B-tree index built in. The extension is bundled with PHP
+and enabled by default on most distributions; if missing, install
+`php8.1-sqlite3` (or the equivalent for your PHP version).
+
+### How it integrates into the current PHP files
+1. **One `connect.php` (or included config)** replaces the per-request
+   `file_get_contents`/`json_decode`/`file_put_contents` dance:
+   ```php
+   $pdo = new PDO('sqlite:' . __DIR__ . '/../data/app.sqlite');
+   $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+   ```
+   The DB file is created automatically on first open.
+
+2. **Schema**: a single `CREATE TABLE IF NOT EXISTS` block (run once, e.g. on
+   install or first request) defines users, posts, comments, sessions, etc.
+   `id INTEGER PRIMARY KEY` gives you auto-increment and index-backed lookups.
+
+3. **Replace read/write with prepared statements**:
+   ```php
+   // read
+   $stmt = $pdo->prepare('SELECT * FROM posts WHERE id = :id');
+   $stmt->execute(['id' => $postId]);
+   $post = $stmt->fetch(PDO::FETCH_OBJ);
+
+   // write
+   $stmt = $pdo->prepare('UPDATE posts SET hidden = 1 WHERE id = :id');
+   $stmt->execute(['id' => $postId]);
+   ```
+
+4. **Transactions** replace the broken `status.txt` mutex. A write that touches
+   posts + users + sessions becomes:
+   ```php
+   $pdo->beginTransaction();
+   // ... multiple statements ...
+   $pdo->commit();
+   ```
+   On error, `$pdo->rollBack()` — no orphan "OPEN" file, no dead `shutdown()`.
+
+5. **Auth / cookies** stay the same. The only material change is that session
+   lookups become `SELECT * FROM sessions WHERE key = :hash` instead of a
+   PHP-loop over decoded JSON.
+
+6. **Migration**: import the existing `users.json` / `posts.json` once into
+   SQLite tables, then delete (or archive) the JSON files. After that, every
+   endpoint speaks SQL; no more `json_encode(array_values(...))` compaction.
+
+### What does *not* change
+- The HTML/JS frontend is untouched. API responses can stay JSON
+  (`json_encode($row)` or `echo json_encode(...)`).
+- No build step, no external server, no new OS packages beyond the PHP
+  sqlite3 extension (already present on most hosts).
+
 ## References
 
 - `php/createJsonPost.php:81` — id assigned as `last_id + 1`, appended via
