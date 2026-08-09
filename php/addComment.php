@@ -95,12 +95,19 @@ if(isset($_POST["id"]) and isset($_POST["comment"]) and isset($_POST["session"])
 
             $time = strval(round(microtime(true)));
 
-            $postFound = false;
             $postIndex = -1;
-            for ($p=0; $p < count($posts) && !$postFound; $p++) {
-                if ($posts[$p]->id == $id) {
+            $low = 0;
+            $high = count($posts) - 1;
+            $postFound = false;
+            while ($low <= $high && !$postFound) {
+                $mid = floor(($low + $high) / 2);
+                if ($posts[$mid]->id == $id) {
                     $postFound = true;
-                    $postIndex = $p;
+                    $postIndex = $mid;
+                } else if ($id < $posts[$mid]->id) {
+                    $high = $mid - 1;
+                } else {
+                    $low = $mid + 1;
                 }
             }
 
