@@ -23,6 +23,11 @@ code and when refactoring; do not "fix" working code solely to satisfy them.
   architectural changes (data-format migrations, moving files out of the web
   root, replacing the locking scheme), open a discussion RFC PR (a `docs/rfc/*.md`
   proposal) instead of a code change, so the approach can be agreed first.
+- **When a PR gets review feedback, prefer a follow-up PR over pushing
+  directly to the same branch.** Create a new branch from `main` (or the PR's
+  merge base), apply the review changes there, and open a new PR so the reviewer
+  can approve the updated diff before it reaches `main`. This prevents
+  un-reviewed changes from landing via an already-approved PR.
 
 ## Testing & CI
 
