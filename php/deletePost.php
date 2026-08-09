@@ -75,21 +75,33 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
                         $savePostId;
                         
                         $postFound = false;
-                        for ($x=0; $x < count($posts) && !$postFound; $x++) {
-                            if ($posts[$x]->id == $postId) {
+                        $postIndex = -1;
+                        $low = 0;
+                        $high = count($posts) - 1;
+                        while ($low <= $high && !$postFound) {
+                            $mid = floor(($low + $high) / 2);
+                            if ($posts[$mid]->id == $postId) {
                                 $postFound = true;
-                                if ($posts[$x]->user != $uID) {
-                                    $response = "notYourPost";
-                                } else if ($posts[$x]->hidden != true) {
-                                    $posts[$x]->hidden = true;
-                                    for ($uc=0; $uc < count($users); $uc++) {
-                                        if ($users[$uc]->id == $posts[$x]->user && $users[$uc]->postCount != null) {
-                                            $users[$uc]->postCount = max(0, intval($users[$uc]->postCount) - 1);
-                                        }
+                                $postIndex = $mid;
+                            } else if ($postId < $posts[$mid]->id) {
+                                $high = $mid - 1;
+                            } else {
+                                $low = $mid + 1;
+                            }
+                        }
+
+                        if ($postFound) {
+                            if ($posts[$postIndex]->user != $uID) {
+                                $response = "notYourPost";
+                            } else if ($posts[$postIndex]->hidden != true) {
+                                $posts[$postIndex]->hidden = true;
+                                for ($uc=0; $uc < count($users); $uc++) {
+                                    if ($users[$uc]->id == $posts[$postIndex]->user && $users[$uc]->postCount != null) {
+                                        $users[$uc]->postCount = max(0, intval($users[$uc]->postCount) - 1);
                                     }
-                                    $deleteValid = true;
-                                    $savePostId = $posts[$x]->id;
                                 }
+                                $deleteValid = true;
+                                $savePostId = $posts[$postIndex]->id;
                             }
                         }
                         
