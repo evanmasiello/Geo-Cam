@@ -1172,8 +1172,8 @@ function toggleComments(id) {
         if (openComments != -1) {
             document.getElementById("comments" + openComments).style.display = "none";
             // document.getElementById("commentsToggle" + openComments).innerHTML = " - Show Comments - ";
-            document.getElementById("showComm" + id).style.display = "inline-block";
-            document.getElementById("hideComm" + id).style.display = "none";
+            document.getElementById("showComm" + openComments).style.display = "inline-block";
+            document.getElementById("hideComm" + openComments).style.display = "none";
         }
         
         openComments = id;
