@@ -95,12 +95,16 @@ if(isset($_POST["id"]) and isset($_POST["comment"]) and isset($_POST["session"])
 
             $time = strval(round(microtime(true)));
 
+            $postFound = false;
             $postIndex = -1;
-            for ($p=0; $p < count($posts); $p++) {
-                if ($posts[$p]->id == $id) { $postIndex = $p; break; }
+            for ($p=0; $p < count($posts) && !$postFound; $p++) {
+                if ($posts[$p]->id == $id) {
+                    $postFound = true;
+                    $postIndex = $p;
+                }
             }
 
-            if ($postIndex == -1) {
+            if (!$postFound) {
                 $response = 0;
                 $validSession = false;
             } else {
