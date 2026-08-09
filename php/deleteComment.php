@@ -67,25 +67,48 @@ if(isset($_POST["id"]) and isset($_POST["commentId"]) and isset($_POST["session"
     
         $posts = array_values($posts);
         
+        $postIndex = -1;
+        $low = 0;
+        $high = count($posts) - 1;
+        $postFound = false;
+        while ($low <= $high && !$postFound) {
+            $mid = floor(($low + $high) / 2);
+            if ($posts[$mid]->id == $id) {
+                $postFound = true;
+                $postIndex = $mid;
+            } else if ($id < $posts[$mid]->id) {
+                $high = $mid - 1;
+            } else {
+                $low = $mid + 1;
+            }
+        }
+
         $commentFound = false;
-        
-        for ($i=0; $i < count($posts) && !$commentFound; $i++) {
-            if ($posts[$i]->id == $id) {
-                if ($posts[$i]->comments != null) {
-                    $comments = json_decode($posts[$i]->comments);
-                    for ($x=0; $x < count($comments) && !$commentFound; $x++) {
-                        if ($comments[$x]->id == $commentId) {
-                            $commentFound = true;
-                            if ($comments[$x]->user != $uID) {
-                                $response = "notYourComment";
-                            } else {
-                                $comments[$x]->hidden = true;
-                                $commentAuthor = $comments[$x]->user;
-                                $posts[$i]->comments = json_encode($comments);
-                            }
-                        }
-                    }
+        $commentIndex = -1;
+        if ($postFound && $posts[$postIndex]->comments != null) {
+            $comments = json_decode($posts[$postIndex]->comments);
+            $low = 0;
+            $high = count($comments) - 1;
+            while ($low <= $high && !$commentFound) {
+                $mid = floor(($low + $high) / 2);
+                if ($comments[$mid]->id == $commentId) {
+                    $commentFound = true;
+                    $commentIndex = $mid;
+                } else if ($commentId < $comments[$mid]->id) {
+                    $high = $mid - 1;
+                } else {
+                    $low = $mid + 1;
                 }
+            }
+        }
+
+        if ($commentFound) {
+            if ($comments[$commentIndex]->user != $uID) {
+                $response = "notYourComment";
+            } else {
+                $comments[$commentIndex]->hidden = true;
+                $commentAuthor = $comments[$commentIndex]->user;
+                $posts[$postIndex]->comments = json_encode($comments);
             }
         }
 
