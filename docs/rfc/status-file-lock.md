@@ -35,6 +35,18 @@ flock($fp, LOCK_UN);
 error, so the fragile `shutdown()` handlers and "OPEN forever" deadlock
 disappear. `register_shutdown_function` blocks can then be removed.
 
+## Decision: proceed with SQLite
+
+The maintainer has decided to move forward with SQLite (see the O(1) post
+lookups RFC / SQLite migration discussion). SQLite handles concurrency
+natively via file-level locks and WAL journaling, so the `status.txt` mutex
+disappears entirely once the flat-file layer is replaced. There is no need to
+implement `flock()` as an intermediate step — the migration itself is the fix.
+
+If the SQLite migration is delayed and the `status.txt` deadlock becomes a
+production issue in the meantime, `flock()` remains a valid short-term
+stopgap.
+
 ## References
 - `php/signIn.php:9-11`, `php/forgotPassword.php:16-18`, `php/getTempPass.php:19-21`
 - `function shutdown()` duplicated across ~20 endpoints
