@@ -105,7 +105,8 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
         
                 $time = strval(round(microtime(true)));
                 
-                $key = hash("sha256", $userObj->user . $_POST["session"] . $time, false);
+                $key = bin2hex(random_bytes(32));
+                $hashedKey = hash("sha256", $key, false);
                 
                 $nameMail = "mailKeys";
                 $file_nameMail = $nameMail . '.json';
@@ -118,8 +119,6 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
                     
                     $jsonArrayMail = json_decode($jsonDataMail);
                     
-                    $hashedKey = hash("sha256", $key, false);
-                    
                     $newSet = Array (
                         "key" => $hashedKey,
                         "userId" => $uID,
@@ -129,8 +128,6 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
                     array_push($jsonArrayMail, $newSet);
                     
                 } else {
-                    
-                    $hashedKey = hash("sha256", $key, false);
                     
                     $jsonArrayMail = Array (
                         "0" => Array (
