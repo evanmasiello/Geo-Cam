@@ -1,6 +1,6 @@
 <?php
 
-if(isset($_POST["lat"]) and isset($_POST["long"]) and $_POST["superSecretPassword"] == "ligmaCock"){
+if (false) {
 //if (false) {
     
     $validSession = true;
