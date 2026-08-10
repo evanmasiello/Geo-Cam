@@ -2293,20 +2293,24 @@ function showProfile(id, postId) {
     if (userIsBlocked(id)) {
         document.getElementById("blockButtonProfile").innerHTML = "Unblock";
         document.getElementById("blockButtonProfile2").innerHTML = "Unblock";
-        document.getElementById("blockButtonProfile").setAttribute("onclick", "unblockUser("+ id + ")");
+        document.getElementById("blockButtonProfile").onclick = function() { unblockUser(id); };
+        document.getElementById("blockButtonProfile2").onclick = function() { unblockUser(id); };
     } else {
-        document.getElementById("blockButtonProfile").setAttribute("onclick", "blockUser('"+ uname + "')");
         document.getElementById("blockButtonProfile").innerHTML = "Block";
         document.getElementById("blockButtonProfile2").innerHTML = "Block";
+        document.getElementById("blockButtonProfile").onclick = function() { blockUser(uname); };
+        document.getElementById("blockButtonProfile2").onclick = function() { blockUser(uname); };
     }
     if (userIsFollowed(id)) {
         document.getElementById("followButtonProfile").innerHTML = "Unfollow";
         document.getElementById("followButtonProfile2").innerHTML = "Unfollow";
-        document.getElementById("followButtonProfile").setAttribute("onclick", "unfollowUser("+ id + ")");
+        document.getElementById("followButtonProfile").onclick = function() { unfollowUser(id); };
+        document.getElementById("followButtonProfile2").onclick = function() { unfollowUser(id); };
     } else {
         document.getElementById("followButtonProfile").innerHTML = "Follow";
         document.getElementById("followButtonProfile2").innerHTML = "Follow";
-        document.getElementById("followButtonProfile").setAttribute("onclick", "followUser('"+ uname + "')");
+        document.getElementById("followButtonProfile").onclick = function() { followUser(uname); };
+        document.getElementById("followButtonProfile2").onclick = function() { followUser(uname); };
     }
     
     if (uname == "Noah" || uname == "1") uname = uname + ' <i class="fa-solid fa-circle-check"></i>';
