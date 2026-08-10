@@ -47,7 +47,7 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["v
         //$passHash = hash("sha256", $_POST["pass"], false);
         
         for ($r=0; $r < count($sessions); $r++) {
-            if ($sessionHash == $sessions[$r]->key) {
+            if ($sessionHash == $sessions[$r]->key && (time() - intval($sessions[$r]->time)) < 7776000) {
                 $uID = $sessions[$r]->userId;
         
                 for ($m=0; $m < count($users); $m++) {

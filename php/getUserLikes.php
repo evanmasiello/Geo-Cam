@@ -16,7 +16,7 @@ if (file_exists("users.json") and isset($_POST["session"]) and file_exists("sess
     
     for ($r=0; $r < count($sessions); $r++) {
         //echo "session hash: $sessionHash and key" . $sessions[$r]->key;
-        if ($sessionHash == $sessions[$r]->key) {
+        if ($sessionHash == $sessions[$r]->key && (time() - intval($sessions[$r]->time)) < 7776000) {
             $validSession = true;
             $userIdNum = $sessions[$r]->userId;
         }

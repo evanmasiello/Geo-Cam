@@ -14,7 +14,7 @@ if(isset($_POST["lat"]) and isset($_POST["long"]) and isset($_POST["session"]) a
     $response = 0;
     
     for ($r=0; $r < count($sessions); $r++) {
-        if ($sessionHash == $sessions[$r]->key) {
+        if ($sessionHash == $sessions[$r]->key && (time() - intval($sessions[$r]->time)) < 7776000) {
             $uID = $sessions[$r]->userId;
             
             $users = json_decode(file_get_contents("users.json"));

@@ -38,7 +38,7 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
     $newPass = hash("sha256", $_POST["passNew"], false);
     
     for ($r=0; $r < count($sessions); $r++) {
-        if ($sessionHash == $sessions[$r]->key) {
+        if ($sessionHash == $sessions[$r]->key && (time() - intval($sessions[$r]->time)) < 7776000) {
             $uID = $sessions[$r]->userId;
             $validSession = true;
         }
@@ -63,8 +63,25 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
                 
                 $users[$i]->pass = $newPass;
                 
-                if (file_put_contents("users.json", json_encode($users))) {
-                    $response = 1;
+                $time = strval(round(microtime(true)));
+                $sessionNew = hash("sha256", "session" . $users[$i]->user . $_POST["passNew"] . $time, false);
+                
+                for ($r=0; $r < count($sessions); $r++) {
+                    if ($sessions[$r]->userId == $uID) {
+                        unset($sessions[$r]);
+                    }
+                }
+                $sessions = array_values($sessions);
+                
+                $newSet = Array (
+                    "key" => hash("sha256", $sessionNew, false),
+                    "userId" => $uID,
+                    "time" => $time,
+                );
+                array_push($sessions, $newSet);
+                
+                if (file_put_contents("users.json", json_encode($users)) && file_put_contents("sessions.json", json_encode($sessions))) {
+                    $response = $sessionNew;
                     sendMessage("Look at that! " . $users[$i]->user . " changed their password");
                     logAction($users[$i]->user . " (user id " . $uID . ") changed their password");
                 }
