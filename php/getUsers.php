@@ -1,4 +1,7 @@
 <?php
+header("Access-Control-Allow-Origin: https://geocam.app");
+header("Access-Control-Allow-Credentials: true");
+
 
 if(isset($_POST["key"])){
     if($_POST["key"] == "yungleandoer2002" && false) {

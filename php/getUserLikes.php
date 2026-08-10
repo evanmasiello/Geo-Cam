@@ -1,4 +1,7 @@
 <?php
+header("Access-Control-Allow-Origin: https://geocam.app");
+header("Access-Control-Allow-Credentials: true");
+
 
 if (file_exists("users.json") and isset($_POST["session"]) and file_exists("sessions.json")) {
     
