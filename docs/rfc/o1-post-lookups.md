@@ -1,5 +1,10 @@
 # RFC: O(1) post lookups — stop compacting the array, or maintain an index?
 
+> **Status: superseded by SQLite migration.** The maintainer has decided to
+> proceed with SQLite (see the SQLite migration RFC), which provides O(1)
+> primary-key lookups natively via its B-tree index. The options below are
+> retained for reference but are no longer under active consideration.
+
 ## The uncomfortable truth: I/O dominates
 
 Every request that touches posts currently does:
