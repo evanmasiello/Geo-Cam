@@ -43,8 +43,8 @@ if (isset($_GET["key"]) and (strlen($_GET["key"]) > 0)) {
             if ($mailArr[$i]->key == $keyHash) {
                 error_log("key time: " . intval($mailArr[$i]->time));
                 error_log("time: " . $time);
-                $difference = $time - intval($mailArr[$i]->time);
-                if ($difference >= 0 && $difference < 600) {
+                $difference = intval($mailArr[$i]->time) - $time;
+                if ($difference < 600) {
                     $userID = $mailArr[$i]->userId;
                     $keyValid = true;
                     $keyID = $i;
@@ -54,13 +54,20 @@ if (isset($_GET["key"]) and (strlen($_GET["key"]) > 0)) {
         
         if ($keyValid) {
             
-            $chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-            $charLen = strlen($chars) - 1;
-            $tempLen = random_int(10, 14);
+            $alphas = range('A', 'Z');
+            
             $tempPass = "";
-            for ($i = 0; $i < $tempLen; $i++) {
-                $tempPass .= $chars[random_int(0, $charLen)];
+            
+            for ($i=0; $i < rand(7, 12); $i++) {
+                $tempPass = $tempPass . $alphas[rand(0, 26)];
             }
+            
+            $tempPass = $tempPass . rand(100, 299);
+            
+            $random_position = rand(0,strlen($tempPass)-1);
+            $chars = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789-_";
+            $random_char = $chars[rand(0,strlen($chars)-1)];
+            $tempPass = substr($tempPass,0,$random_position).$random_char.substr($tempPass,$random_position);
             
             $userFile = "users.json";
             
@@ -75,11 +82,10 @@ if (isset($_GET["key"]) and (strlen($_GET["key"]) > 0)) {
                 echo "<h2 style='text-align:center;'>temporary password failed, please request another email</h2>";
             }
             
-            if ($userID !== null and file_put_contents($userFile, json_encode($userArr))) {
+            if ($userID != null and file_put_contents($userFile, json_encode($userArr))) {
                 echo "<h2 style='text-align:center;'>Your temporary password is: \"$tempPass\", please reset your password once you are able to access your account</h2>";
                 
                 unset($mailArr[$keyID]);
-                $mailArr = array_values($mailArr);
                 
                 for ($i=0; $i < count($mailArr); $i++) {
                     

@@ -1,0 +1,28 @@
+# BEGIN HTTPS Forced Redirect
+# The directives (lines) between "BEGIN HTTPS Forced Redirect" and 
+# "END HTTPS Forced Redirect" are dynamically generated, and should 
+# only be modified via the filters. Any changes to the directives between 
+# these markers will be overwritten.
+
+RewriteEngine On 
+RewriteCond %{HTTPS} off 
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^(.*)$ $1.html
+
+<IfModule mod_rewrite.c>
+RewriteEngine On 
+RewriteCond %{HTTPS} off 
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# END HTTPS Forced Redirect
+
+
+# BEGIN WordPress
+# The directives (lines) between "BEGIN WordPress" and "END WordPress" are
+# dynamically generated, and should only be modified via WordPress filters.
+# Any changes to the directives between these markers will be overwritten.
+
+# END WordPress

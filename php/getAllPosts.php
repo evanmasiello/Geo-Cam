@@ -1,6 +1,6 @@
 <?php
 
-if (false) {
+if(isset($_POST["lat"]) and isset($_POST["long"]) and $_POST["superSecretPassword"] == "ligmaCock"){
 //if (false) {
     
     $validSession = true;
@@ -31,11 +31,11 @@ for ($i = count($posts)-1; $i >= 0; $i--) {
         
         if ($posts[$i]->time < $minTime) $minTime = $posts[$i]->time;
         
-        $userVar = "deleted user";
         for ($c=0; $c < count($users); $c++) {
-            if ($users[$c]->id == $posts[$i]->user)         $userVar = $users[$c]->user;
+            if ($users[$c]->id == $posts[$i]->user) $userVar = $users[$c]->user;
         }
-
+        
+        if ($posts[$i]->user == -1) $userVar = "deleted user";
         
         $finalPosts[$finalPostCount]->postedBy = $userVar;
         $finalPosts[$finalPostCount]->distance = distance($latPost, $longPost, $posts[$i]->lat, $posts[$i]->long);
@@ -52,7 +52,7 @@ if (count($finalPosts) > 0) {
     $distanceTotal = 0;
     $likesTotal = 0;
     
-    for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
+    for ($i = count($finalPosts); $i >= 0; $i--) {
         $timeTotal = $timeTotal + ($finalPosts[$i]->time / 10000);
         $distanceTotal = $distanceTotal + $finalPosts[$i]->distance;
         $likesTotal = $likesTotal + $finalPosts[$i]->likes;
@@ -66,7 +66,7 @@ if (count($finalPosts) > 0) {
     if ($distanceMean == 0) $distanceMean = 0.0001;
     if ($likesMean == 0) $likesMean = 0.0001;
     
-    for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
+    for ($i = count($finalPosts); $i >= 0; $i--) {
         $timeTotal = $timeTotal + ($finalPosts[$i]->time / 10000);
         $distanceTotal = $distanceTotal + $finalPosts[$i]->distance;
         $likesTotal = $likesTotal + $finalPosts[$i]->likes;
@@ -76,7 +76,7 @@ if (count($finalPosts) > 0) {
     $distDevTotal = 0;
     $likesDevTotal = 0;
 
-    for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
+    for ($i = count($finalPosts); $i >= 0; $i--) {
         $timeDevTotal += abs(($finalPosts[$i]->time / 10000) - $timeMean);
         $distDevTotal += abs($finalPosts[$i]->distance - $distanceMean);
         $likesDevTotal += abs($finalPosts[$i]->likes - $likesMean);
@@ -94,7 +94,7 @@ if (count($finalPosts) > 0) {
    
    $finalPosts = array_values($finalPosts);
 
-    for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
+    for ($i = count($finalPosts); $i >= 0; $i--) {
         if (!is_null($finalPosts[$i])) {
             $finalPosts[$i]->zTime = -(($finalPosts[$i]->time / 10000 - $timeMean) / $timeStDev);
             $finalPosts[$i]->zDistance = ($finalPosts[$i]->distance - $distanceMean) / $distStDev;

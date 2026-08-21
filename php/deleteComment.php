@@ -67,51 +67,44 @@ if(isset($_POST["id"]) and isset($_POST["commentId"]) and isset($_POST["session"
     
         $posts = array_values($posts);
         
-        $commentFound = false;
+        $hasBeenFound = false;
         
-        for ($i=0; $i < count($posts) && !$commentFound; $i++) {
+        for ($i=0; $i < count($posts) && !$hasBeenFound; $i++) {
             if ($posts[$i]->id == $id) {
                 if ($posts[$i]->comments != null) {
                     $comments = json_decode($posts[$i]->comments);
-                    for ($x=0; $x < count($comments) && !$commentFound; $x++) {
+                    for ($x=0; $x < count($comments) && !$hasBeenFound; $x++) {
                         if ($comments[$x]->id == $commentId) {
-                            $commentFound = true;
-                            if ($comments[$x]->user != $uID) {
-                                $response = "notYourComment";
-                            } else {
-                                $comments[$x]->hidden = true;
-                                $commentAuthor = $comments[$x]->user;
-                                $posts[$i]->comments = json_encode($comments);
-                            }
+                            $comments[$x]->hidden = true;
+                            $posts[$i]->comments = json_encode($comments);
+                            $hasBeenFound = true;
                         }
                     }
                 }
             }
         }
-
-        if ($commentFound && $response != "notYourComment") {
+        
+        if ($hasBeenFound) {
             for ($l=0; $l < count($users); $l++) {
-                if ($users[$l]->id == $commentAuthor) {
+                if ($users[$l]->id == $uID) {
                     if ($users[$l]->commentCount != null) {
-                        $users[$l]->commentCount = max(0, $users[$l]->commentCount - 1);
+                        $users[$l]->commentCount--;
                     } else {
                         $users[$l]->commentCount = 0;
                     }
                 }
             }
-
-            $json = json_encode($posts);
-
-            if (file_put_contents($filename, $json) && file_put_contents("users.json", json_encode($users))) {
-                $response = 1;
-                sendMessage("Oh nah! $uName just deleted a comment!");
+        }
+    
+        $json = json_encode($posts);
+        
+        if (file_put_contents($filename, $json) && file_put_contents("users.json", json_encode($users))) {
+                $response = 1;   
+                sendMessage("Oh nah! $uName just deleted a comment!");   
                 logAction($uName . " (user id " . $uID . ") deleted comment #$commentId on post #" . $id);
             } else {
                 $response = 0;
             }
-        } else if ($response != "notYourComment") {
-            $response = 0;
-        }
             
         } else {
             $response = 0;

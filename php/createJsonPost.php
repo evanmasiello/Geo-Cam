@@ -55,6 +55,8 @@ if(isset($_POST["image"]) and isset($_POST["lat"]) and isset($_POST["long"]) and
     if (isset($_POST["vis"])) {
         if ($_POST["vis"] == "following") {
             $postVis = "following";
+        } elseif ($_POST["vis"] == "all-local") {
+            $postVis = "all-local";
         } else {
             $postVis = "all";
         }

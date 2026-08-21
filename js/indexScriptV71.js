@@ -31,6 +31,20 @@ function userIsFollowed(id) {
     
 }
 
+function switchToGlobal() {
+    document.getElementById("localButton").style.display = "none";
+    document.getElementById("globalButton").style.display = "inline";
+    
+    getGlobalPosts();
+}
+
+function switchToLocal() {
+    document.getElementById("localButton").style.display = "inline";
+    document.getElementById("globalButton").style.display = "none";
+    
+    showPosts();
+}
+
 console.log("is user blocked: " + userIsBlocked(2));
 
 function userIsBlocked(id) {
@@ -43,6 +57,11 @@ function userIsBlocked(id) {
     }
     
     return false;
+    
+}
+
+function toggleLocality() {
+    
     
 }
 
@@ -449,11 +468,7 @@ function showPosts() {
 
                     //console.log("server response: " + xmlhttp.responseText);
                     
-                    try {
-                        imageArray = JSON.parse(xmlhttp.responseText);
-                    } catch (e) {
-                        imageArray = [];
-                    }
+                    imageArray = eval(xmlhttp.responseText);
                     
                     accessCode = imageArray[0].accessCode;
                     
@@ -610,11 +625,99 @@ function showPostsByMe() {
                     //document.getElementById("offsetDiv").style.display = "block";
                 } else {
                     
-                    try {
-                        imageArray = JSON.parse(xmlhttp.responseText);
-                    } catch (e) {
-                        imageArray = [];
-                    }
+                    imageArray = eval(xmlhttp.responseText);
+                    
+                    accessCode = imageArray[0].accessCode;
+
+                    maxDist = 1;
+                    
+                    if (imageArray.length > 0) timeMin = imageArray[0].minTime;
+                    if (imageArray.length > 0 && imageArray[0].maxDist != undefined && imageArray[0].maxDist != null) maxDist = imageArray[0].maxDist;
+                    
+                    document.getElementById("mileRange").max = maxDist * 5280;
+                    document.getElementById("mileRange").value = maxDist * 5280;
+                    
+                    setCSSProperty();
+                    
+                    var output = document.getElementById("milesDisplay");
+                    output.innerHTML = slider.value/5280 + " mile";
+                      
+                      if (maxDist < 0.5) {
+                        maxDist = maxDist * 5280;
+                        if (maxDist == 1) {
+                          output.innerHTML = Math.round(maxDist) + " foot";
+                        } else {
+                          output.innerHTML = Math.round(maxDist) + " feet";
+                        }
+                      } else {
+                        if (maxDist == 1) {
+                          output.innerHTML = maxDist.toFixed(2) + " mile";
+                        } else {
+                          output.innerHTML = maxDist.toFixed(2) + " miles";   
+                        }
+                      }
+                      
+                    var distanceSlider = document.getElementById("mileRange");
+  
+                    distanceInput = distanceSlider.value / 5280;
+
+                    document.getElementById("dateStart").min = timeMin;
+
+                    document.getElementById("feed").innerHTML = "";
+
+                    sortImages();
+                    
+                    initDateFilters();
+                    
+                }
+            }
+        }
+    };
+    
+    xmlhttp.send(formDataFeed);
+
+}
+
+function getGlobalPosts() {
+    document.getElementById("feed").innerHTML = "<br><div class='loader'></div>";
+
+    var formDataFeed = new FormData();
+    
+    formDataFeed.append('lat', lat);
+    formDataFeed.append('long', long);
+
+    var xmlhttp = new XMLHttpRequest();
+
+    var getFile = './php/getGlobalFeed.php?_=' + Date.now();
+    
+   //console.log("getFile is " + getFile);
+
+    xmlhttp.open('POST', getFile, true);
+
+    xmlhttp.onreadystatechange = function() {
+        if (xmlhttp.readyState == 4) {
+            if (xmlhttp.status == 200) {
+                //alert("chenging feed");
+                //console.log("changing feed");
+
+                console.log("getting global feed");
+              console.log("response is: " + xmlhttp.responseText);
+
+                if (xmlhttp.responseText == "noLocation") {
+                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! We can't tell where you are. Please allow us to access your location and reload.</h2>";
+                    //document.getElementById("offsetDiv").style.display = "block";
+                } else if (xmlhttp.responseText === "[]") {
+                   //console.log("bad response");
+                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you, try making one.</h2>";
+                    //document.getElementById("offsetDiv").style.display = "block";
+                } else if (xmlhttp.responseText === "invalidSession") {
+                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! We couldn't verify your session.</h2>";
+                } else if (xmlhttp.responseText === "[null]") {
+                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you, try making one.</h2>";
+                    //document.getElementById("offsetDiv").style.display = "block";
+                } else {
+                    
+                    imageArray = eval(xmlhttp.responseText);
                     
                     accessCode = imageArray[0].accessCode;
 
@@ -1172,8 +1275,8 @@ function toggleComments(id) {
         if (openComments != -1) {
             document.getElementById("comments" + openComments).style.display = "none";
             // document.getElementById("commentsToggle" + openComments).innerHTML = " - Show Comments - ";
-            document.getElementById("showComm" + openComments).style.display = "inline-block";
-            document.getElementById("hideComm" + openComments).style.display = "none";
+            document.getElementById("showComm" + id).style.display = "inline-block";
+            document.getElementById("hideComm" + id).style.display = "none";
         }
         
         openComments = id;
@@ -2293,24 +2396,20 @@ function showProfile(id, postId) {
     if (userIsBlocked(id)) {
         document.getElementById("blockButtonProfile").innerHTML = "Unblock";
         document.getElementById("blockButtonProfile2").innerHTML = "Unblock";
-        document.getElementById("blockButtonProfile").onclick = function() { unblockUser(id); };
-        document.getElementById("blockButtonProfile2").onclick = function() { unblockUser(id); };
+        document.getElementById("blockButtonProfile").setAttribute("onclick", "unblockUser("+ id + ")");
     } else {
+        document.getElementById("blockButtonProfile").setAttribute("onclick", "blockUser('"+ uname + "')");
         document.getElementById("blockButtonProfile").innerHTML = "Block";
         document.getElementById("blockButtonProfile2").innerHTML = "Block";
-        document.getElementById("blockButtonProfile").onclick = function() { blockUser(uname); };
-        document.getElementById("blockButtonProfile2").onclick = function() { blockUser(uname); };
     }
     if (userIsFollowed(id)) {
         document.getElementById("followButtonProfile").innerHTML = "Unfollow";
         document.getElementById("followButtonProfile2").innerHTML = "Unfollow";
-        document.getElementById("followButtonProfile").onclick = function() { unfollowUser(id); };
-        document.getElementById("followButtonProfile2").onclick = function() { unfollowUser(id); };
+        document.getElementById("followButtonProfile").setAttribute("onclick", "unfollowUser("+ id + ")");
     } else {
         document.getElementById("followButtonProfile").innerHTML = "Follow";
         document.getElementById("followButtonProfile2").innerHTML = "Follow";
-        document.getElementById("followButtonProfile").onclick = function() { followUser(uname); };
-        document.getElementById("followButtonProfile2").onclick = function() { followUser(uname); };
+        document.getElementById("followButtonProfile").setAttribute("onclick", "followUser('"+ uname + "')");
     }
     
     if (uname == "Noah" || uname == "1") uname = uname + ' <i class="fa-solid fa-circle-check"></i>';

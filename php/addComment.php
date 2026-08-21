@@ -74,7 +74,7 @@ if(isset($_POST["id"]) and isset($_POST["comment"]) and isset($_POST["session"])
             $response = "noComment";
         }
         
-        if (strlen(trim($_POST["comment"])) > 150) {
+        if (strlen($_POST["uname"]) > 150) {
             $response = "tooLong";
             $validSession = false;
         }
@@ -90,51 +90,45 @@ if(isset($_POST["id"]) and isset($_POST["comment"]) and isset($_POST["session"])
             $comment = htmlspecialchars(trim($_POST["comment"]));
             $filename = "../posts/posts.json";
             $posts = json_decode(file_get_contents($filename));
-
+        
             $posts = array_values($posts);
-
+            
             $time = strval(round(microtime(true)));
-
-            $postIndex = -1;
-            $low = 0;
-            $high = count($posts) - 1;
-            $postFound = false;
-            while ($low <= $high && !$postFound) {
-                $mid = floor(($low + $high) / 2);
-                if ($posts[$mid]->id == $id) {
-                    $postFound = true;
-                    $postIndex = $mid;
-                } else if ($id < $posts[$mid]->id) {
-                    $high = $mid - 1;
-                } else {
-                    $low = $mid + 1;
-                }
-            }
-
-            if (!$postFound) {
-                $response = 0;
-                $validSession = false;
+            
+            $commentId = -1;
+        
+            if ($posts[$id]->comments != null) {
+                $commentsArr = json_decode($posts[$id]->comments);
+                
+                $newComment = Array (
+                        "id" => $commentsArr[count($commentsArr) - 1]->id + 1,
+                        "time" => $time,
+                        "user" => $uID,
+                        "comment" => $comment,
+                    );
+                    
+                $commentId = $commentsArr[count($commentsArr) - 1]->id + 1;
+                
+                array_push($commentsArr,$newComment);
             } else {
-                if ($posts[$postIndex]->comments != null) {
-                    $commentsArr = json_decode($posts[$postIndex]->comments);
-                    $newComment = Array (
-                            "id" => $commentsArr[count($commentsArr) - 1]->id + 1,
-                            "time" => $time,
-                            "user" => $uID,
-                            "comment" => $comment,
-                        );
-                    array_push($commentsArr,$newComment);
-                } else {
-                    $commentsArr = [];
-                    $newComment = Array (
-                            "id" => 0,
-                            "time" => $time,
-                            "user" => $uID,
-                            "comment" => $comment,
-                        );
-                    array_push($commentsArr,$newComment);
+                $commentsArr = [];
+                
+                $newComment = Array (
+                        "id" => 0,
+                        "time" => $time,
+                        "user" => $uID,
+                        "comment" => $comment,
+                    );
+                    
+                $commentId = $commentsArr[count($commentsArr) - 1]->id + 1;
+                
+                array_push($commentsArr,$newComment);
+            }
+            
+            for ($i=0; $i < count($posts); $i++) {
+                if ($posts[$i]->id == $id) {
+                    $posts[$i]->comments = json_encode($commentsArr);
                 }
-                $posts[$postIndex]->comments = json_encode($commentsArr);
             }
             
             for ($l=0; $l < count($users); $l++) {

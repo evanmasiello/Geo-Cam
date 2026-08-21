@@ -2,9 +2,9 @@
 <html id="html">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0 maximum-scale=1.0 user-scalable=no" charset="utf-8" />
     <title>Geo Cam</title>
-    <link href="./css/styleV84.css" rel="stylesheet" type="text/css" />
+    <link href="./css/styleV85.css" rel="stylesheet" type="text/css" />
     <link rel="icon" href="./assets/Icon.png">
   </head>
   <body>
@@ -59,7 +59,7 @@
         <button class="editAccountButtons" onclick="changeName()">Change Username</button><br><br>
         <button class="editAccountButtons" onclick="changePass()">Change Password</button><br><br>
         <button class="editAccountButtons" onclick="changeEmail()">Change Email</button><br><br></span>
-        <button class="accountButtons" onclick="manageFollowed()">Manage Following</button><br><br>
+        <button class="accountButtons" onclick="manageFollowed()">Manage Your Circle</button><br><br>
         <button class="accountButtons" onclick="manageBlocked()">Manage Blocked</button><br><br>
         <button class="accountButtons" onclick="deleteAccount()">Delete Account</button><br><br>
         <br>
@@ -80,10 +80,10 @@
         <button class="accountButtons" onclick="showLoggedIn()">Go Back</button>
     </div>
     <div id="manageFollowed" style="display: none;">
-        <p>You can follow users by entering their username below</p><br>
+        <p>You can add users to your circle by entering their name below</p><br>
         <p class="halfFields">Name: <input class="halfFields" type="text" name="username" id="nameManageFollow"></p><br>
-        <button class="accountButtons" onclick="followUserByName()">Follow</button><br><br>
-        <p>You can unfollow users using the list below</p><br>
+        <button class="accountButtons" onclick="followUserByName()">Add To Circle</button><br><br>
+        <p>You can remove users from your circle using the list below</p><br>
         <div id="listOfFollowed"></div><br>
         <button class="accountButtons" onclick="showLoggedIn()">Go Back</button>
     </div>
@@ -167,7 +167,8 @@
   <div id="uploadButtons" style="display: none;">
     <p id="editPostVisTextCam">Show this post to: <select id="editPostVisSelectCam" name="Visibility">
         <option value="all">Everyone</option>
-        <option value="following">Only people I follow</option>
+        <option value="all-local">Everyone Locally (Won't be shown on the global feed)</option>
+        <option value="following">Only People In My Circle</option>
       </select></p>
     <div id="uploadDiv" class="thirds">
         <i id="reset" onclick="resetCam()" class="fa-solid fa-arrow-left icon" style="
@@ -186,11 +187,11 @@
         <a class="footLink selectedPage" href=""><i class="fa-solid fa-camera"></i><br></a>
       </div>
       <div class="right footerSubDivide footerLinkR footerLink">
-        <a class="footLink" href="./"><i class="fa-solid fa-house"></i><br></a>
+        <a class="footLink" href="./?_=24"><i class="fa-solid fa-house"></i><br></a>
       </div>
     </div>
-    <script src="./js/sharedScriptV21.js"></script>
-    <script src="./js/cameraScriptV21.js"></script>
+    <script src="./js/sharedScriptV22.js"></script>
+    <script src="./js/cameraScriptV22.js"></script>
     <script src="https://kit.fontawesome.com/7ef045b943.js" crossorigin="anonymous"></script>
   </body>
 </html>

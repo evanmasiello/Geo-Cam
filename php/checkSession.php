@@ -23,8 +23,6 @@ if(isset($_POST["session"]) and file_exists("sessions.json")) {
                     
                     $userObj = $users[$m];
                     
-                    unset($userObj->pass, $userObj->email);
-                    
                     if ($users[$m]->blocked != null) {
                         $userBlocked = json_decode($users[$m]->blocked);   
                     } else {

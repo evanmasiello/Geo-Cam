@@ -39,28 +39,24 @@ if(isset($_POST["likes"]) and file_exists($filename) and isset($_POST["session"]
     error_log( "count users: " . count($users));
     
     if ($validSession) {
-        $decoded = json_decode($_POST["likes"], true);
-        if (!is_array($decoded)) {
-            $response = 0;
-        } else {
-            $decoded = array_values(array_unique(array_map('intval', $decoded)));
-            for ($m=0; $m < count($users); $m++) {
-                if ($users[$m]->id == $userIDNum and $users[$m]->emailIsVerified) {
-                    $users[$m]->likes = json_encode($decoded);
-                }
+        for ($m=0; $m < count($users); $m++) {
+            if ($users[$m]->id == $userIDNum and $users[$m]->emailIsVerified) {
+                error_log("in if");
+                
+                //echo "likes: ";
+                error_log("m is $m");
+                error_log("likes is $likes");
+                error_log("user likes is " . $users[$m]->likes);
+                
+                $users[$m]->likes = $likes;
             }
-            $response = 1;
         }
-
-        if ($response == 1) {
-            $json = json_encode($users);
-            file_put_contents($filename, $json); //generate json file
-        }
-    } else {
-        $response = 0;
     }
 
-    echo $response;
+    $json = json_encode($users);
+    file_put_contents($filename, $json); //generate json file
+  
+    echo $user;
     
 }
 
