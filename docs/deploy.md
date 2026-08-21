@@ -74,6 +74,27 @@ Protected paths: `php/users.json`, `php/sessions.json`, `php/mailKeys.json`,
 `dangerous-clean-slate` is never enabled. Never enable it — it wipes the
 entire remote directory, `posts/` included.
 
+## TLS certificate mismatch
+
+Bluehost's FTP certificate is issued for the physical server
+(`boxNNNN.bluehost.com`), not for your domain. Pointing `FTP_SERVER` at your
+domain therefore fails verification:
+
+```
+curl: (60) SSL: no alternative certificate subject name matches target host name
+```
+
+The `Inspect FTP server certificate` step prints the names the certificate
+actually covers. Prefer setting `FTP_SERVER` to one of those — usually the
+server hostname shown in cPanel's sidebar under *General Information*. That
+keeps verification on.
+
+Only if no usable hostname matches, flip `TLS_INSECURE` to `"true"` in
+`.github/workflows/deploy.yml`. Traffic stays encrypted, but the server is no
+longer authenticated, so the credentials become vulnerable to an active
+man-in-the-middle. Note the deploy step already runs this way — the action's
+`security` input defaults to `loose`.
+
 ## Backups
 
 The `backup` job runs before every deploy. It pulls the live JSON store down
