@@ -66,7 +66,10 @@ jobs:
           # Explicit FTPS on port 21 with full certificate verification,
           # matching the deploy job. Password comes from the environment so
           # it never appears in the process list.
-          lftp -u "$FTP_USERNAME" --env-password "ftp://$FTP_SERVER" -f mirror.lftp
+          # -e and -u must precede the host: "lftp -f" takes a script INSTEAD
+          # of a host, so combining the two makes lftp hand "-f" to open.
+          lftp -u "$FTP_USERNAME" --env-password \
+               -e "source mirror.lftp" "ftp://$FTP_SERVER"
 
           echo "--- snapshot tree ---"
           find snapshot -type f | sort | head -100
