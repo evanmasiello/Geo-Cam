@@ -139,6 +139,11 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
           port: 21
+          # Bluehost presents a publicly-trusted Sectigo wildcard for
+          # *.bluehost.com, so FTP_SERVER must be the box hostname
+          # (box2261.bluehost.com) rather than the domain. That makes full
+          # certificate verification possible; don't downgrade this to "loose".
+          security: strict
           server-dir: ${{ secrets.FTP_REMOTE_DIR }}
           # >>> SAFETY SWITCH <<<
           # true  = rehearsal, connects and logs but writes nothing.

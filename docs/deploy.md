@@ -9,10 +9,13 @@ No more dragging files into the cPanel File Manager.
    Make a user just for deploys (e.g. `deploy@yourdomain.com`) and set its
    directory to the web root you deploy into. A dedicated account means you
    can revoke it without touching your cPanel login.
-2. **Note the FTPS hostname.** Usually your domain or the server hostname
-   from cPanel's sidebar. Bluehost supports explicit FTPS on port 21 — that
-   is what the workflow uses (`protocol: ftps`). Plain `ftp` sends the
-   password in cleartext; don't.
+2. **Use the box hostname, not your domain.** Bluehost's FTP certificate is a
+   publicly-trusted Sectigo wildcard for `*.bluehost.com`, so your domain will
+   fail verification with `curl: (60)`. Take the *Server Name* from cPanel's
+   *Server Information* (e.g. `box2261`) and set `FTP_SERVER` to
+   `box2261.bluehost.com`. That matches the wildcard, so both the backup step
+   and the deploy step verify strictly. Explicit FTPS on port 21 is used
+   throughout; plain `ftp` sends the password in cleartext, so don't.
 3. **Confirm the web root path.** For a primary domain it is
    `/public_html/`. Addon domains and subdomains live under
    `/public_html/<something>/`.
