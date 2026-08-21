@@ -781,16 +781,10 @@ function execChangePass() {
             
             //setCookie("codeUser", response, 999999);
             
-            if (responseText == 1) {
-                //session = responseText;
+            if (responseText != "badPass" && responseText != "") {
+                session = responseText;
                 
-                //setCookie("session", responseText, 1);
-                
-                //alert("You have been logged in!");
-                
-                //showLoggedIn();
-                
-                //checkSession(false);
+                setCookie("session", responseText, 1);
                 
                 alert("Your password has been changed!");
                 

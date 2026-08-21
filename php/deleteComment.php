@@ -37,7 +37,7 @@ if(isset($_POST["id"]) and isset($_POST["commentId"]) and isset($_POST["session"
     $weOpened = true;
     
     for ($r=0; $r < count($sessions); $r++) {
-        if ($sessionHash == $sessions[$r]->key) {
+        if ($sessionHash == $sessions[$r]->key && (time() - intval($sessions[$r]->time)) < 7776000) {
             $uID = $sessions[$r]->userId;
             
             $users = json_decode(file_get_contents("users.json"));

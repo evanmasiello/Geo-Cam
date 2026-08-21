@@ -28,7 +28,7 @@ if(isset($_POST["likes"]) and file_exists($filename) and isset($_POST["session"]
     $validSession = false;
     
     for ($r=0; $r < count($sessions); $r++) {
-        if ($sessionHash == $sessions[$r]->key) {
+        if ($sessionHash == $sessions[$r]->key && (time() - intval($sessions[$r]->time)) < 7776000) {
             $validSession = true;
             $userIDNum = $sessions[$r]->userId;
         }

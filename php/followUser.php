@@ -45,7 +45,7 @@ if(isset($_POST["name"]) and isset($_POST["session"]) and file_exists("sessions.
     $shouldPush = true;
     
     for ($r=0; $r < count($sessions); $r++) {
-        if ($sessionHash == $sessions[$r]->key) {
+        if ($sessionHash == $sessions[$r]->key && (time() - intval($sessions[$r]->time)) < 7776000) {
             error_log("in 1");
             $uID = $sessions[$r]->userId;
             
