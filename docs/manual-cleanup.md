@@ -153,14 +153,17 @@ cPanel created these when FTP accounts were made with the default directory:
 
 ---
 
-## 9. After the cache-busting change deploys
+## 9. After the cache-busting change deploys — DONE, no action needed
 
-Renaming to stable filenames leaves one final set of orphans on the server —
-the last of them, since filenames stop changing after this:
+This step anticipated that renaming to stable filenames would strand the old
+versioned files on the server. It did not: the FTP deploy action treats a
+rename as delete-plus-add, so `indexScriptV80.js`, `sharedScriptV22.js`,
+`cameraScriptV22.js`, `styleV85.css` and `styleV53.css` were removed
+automatically. All five now return 404; verified after the deploy of
+`d9d67b5`. Nothing to delete by hand.
 
-- `js/indexScriptV80.js`, `js/sharedScriptV22.js`, `js/cameraScriptV22.js`
-- `css/styleV85.css`, `css/styleV53.css`
-
-Delete them only **after** confirming the site works on the new
-`indexScript.js` / `sharedScript.js` / `cameraScript.js` / `style.css` /
-`styleDashboard.css` files, so there is something to fall back to.
+Note the flip side: because the old files are gone rather than lingering,
+there is no fallback for a browser holding a cached page that still points at
+them. The `.htaccess` cache rules added alongside this keep that window
+short - HTML is served `no-cache` and always revalidates, while only
+hash-stamped asset URLs are cached long-term.
