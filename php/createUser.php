@@ -141,7 +141,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["uname"]) and isset($_
             );
         }
         
-        $key = hash("sha256", $uname . $_POST["pass"] . $time, false);
+        $key = bin2hex(random_bytes(32));
+        $hashedKey = hash("sha256", $key, false);
         
         $nameMail = "mailKeys";
         $file_nameMail = $nameMail . '.json';
@@ -154,8 +155,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["uname"]) and isset($_
             
             $jsonArrayMail = json_decode($jsonDataMail);
             
-            $hashedKey = hash("sha256", $key, false);
-            
             $newSet = Array (
                 "key" => $hashedKey,
                 "userId" => $userID,
@@ -165,8 +164,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["uname"]) and isset($_
             array_push($jsonArrayMail, $newSet);
             
         } else {
-            
-            $hashedKey = hash("sha256", $key, false);
             
             $jsonArrayMail = Array (
                 "0" => Array (

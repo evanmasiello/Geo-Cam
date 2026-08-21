@@ -40,7 +40,7 @@ if (isset($_GET["key"]) and (strlen($_GET["key"]) > 0)) {
         $time = round(microtime(true));
         
         for ($i=0; $i < count($mailArr); $i++) {
-            if ($mailArr[$i]->key == $keyHash) {
+            if (hash_equals($mailArr[$i]->key, $keyHash)) {
                 error_log("key time: " . intval($mailArr[$i]->time));
                 error_log("time: " . $time);
                 $difference = $time - intval($mailArr[$i]->time);

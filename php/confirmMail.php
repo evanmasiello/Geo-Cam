@@ -42,7 +42,7 @@ if (isset($_GET["key"]) and (strlen($_GET["key"]) > 0)) {
         $keyValid = false;
         
         for ($i=0; $i < count($mailArr); $i++) {
-            if ($mailArr[$i]->key == $keyHash) {
+            if (hash_equals($mailArr[$i]->key, $keyHash)) {
                 $userID = $mailArr[$i]->userId;
                 $keyValid = true;
                 $keyID = $i;
