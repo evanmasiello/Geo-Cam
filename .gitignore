@@ -1,0 +1,23 @@
+# ---------------------------------------------------------------------------
+# Live runtime state. These files exist ONLY on the production server.
+# They are never committed and never deployed -- see .github/workflows/deploy.yml
+# ---------------------------------------------------------------------------
+php/users.json
+php/sessions.json
+php/mailKeys.json
+php/forgotKeys.json
+php/flags.json
+php/commentFlags.json
+php/blockedWords.json
+php/discord.txt
+php/accessCode.txt
+php/status.txt
+
+# Post store and logs (siblings of the web root, written by php/)
+posts/
+logs/
+
+# Deploy sync state
+.ftp-deploy-sync-state.json
+
+.DS_Store
