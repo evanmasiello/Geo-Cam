@@ -1,0 +1,146 @@
+name: Deploy to Bluehost
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Never let two deploys touch the server at once.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------
+  # 1. Don't ship code that doesn't parse.
+  # ---------------------------------------------------------------------
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: bash tests/run.sh
+
+  # ---------------------------------------------------------------------
+  # 2. Pull the live JSON store down BEFORE touching the server.
+  #    The app has no backup logic of its own, so this workflow is it.
+  # ---------------------------------------------------------------------
+  backup:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download live data files
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
+        run: |
+          set -euo pipefail
+
+          # There is no default web root -- a wrong or missing path must fail
+          # loudly rather than silently aiming at the wrong directory.
+          # The value is a secret, so it is masked in logs; check shape only.
+          [ -n "${REMOTE_DIR:-}" ] || { echo "::error::FTP_REMOTE_DIR secret is not set"; exit 1; }
+          case "$REMOTE_DIR" in
+            /*/) ;;
+            *) echo "::error::FTP_REMOTE_DIR must start and end with '/' (e.g. /public_html/geocam/)"; exit 1 ;;
+          esac
+
+          mkdir -p backup/php backup/posts
+
+          # Files that MUST exist. A failure here aborts the deploy.
+          required="php/users.json posts/posts.json"
+          # Files that may legitimately be absent on a fresh install.
+          optional="php/sessions.json php/mailKeys.json php/forgotKeys.json \
+                    php/flags.json php/commentFlags.json php/blockedWords.json \
+                    php/discord.txt php/accessCode.txt php/status.txt"
+
+          fetch() {
+            curl --ssl-reqd --fail --silent --show-error \
+                 --user "$FTP_USERNAME:$FTP_PASSWORD" \
+                 "ftp://$FTP_SERVER${REMOTE_DIR}$1" -o "backup/$1"
+          }
+
+          for f in $required; do
+            echo "backing up $f"
+            fetch "$f"
+          done
+
+          for f in $optional; do
+            if fetch "$f"; then echo "backed up $f"; else echo "skipped $f (absent)"; fi
+          done
+
+          echo "--- backup contents ---"
+          find backup -type f -exec ls -l {} +
+
+      - name: Sanity-check the backup
+        run: |
+          set -euo pipefail
+          # An empty or malformed users.json means we grabbed the wrong path,
+          # or the live store is already damaged. Either way: stop.
+          for f in backup/php/users.json backup/posts/posts.json; do
+            [ -s "$f" ] || { echo "::error::$f is empty -- check FTP_REMOTE_DIR"; exit 1; }
+            python3 -c "import json,sys; json.load(open('$f'))" \
+              || { echo "::error::$f is not valid JSON"; exit 1; }
+          done
+          echo "backup looks sane"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: data-backup-${{ github.run_number }}-${{ github.sha }}
+          path: backup/
+          retention-days: 90
+
+  # ---------------------------------------------------------------------
+  # 3. Sync code only. Every runtime-written file is excluded by name.
+  # ---------------------------------------------------------------------
+  deploy:
+    needs: backup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync files over FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          server-dir: ${{ secrets.FTP_REMOTE_DIR }}
+          # >>> SAFETY SWITCH <<<
+          # true  = rehearsal, connects and logs but writes nothing.
+          # false = real deploy.
+          # Flip to false by hand when you are ready to go live.
+          dry-run: true
+          log-level: standard
+          # NOTE: setting `exclude` REPLACES the action's defaults, so the
+          # .git patterns have to be repeated here.
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.DS_Store
+            .gitignore
+            AGENTS.md
+            README.md
+            tests/**
+            php/users.json
+            php/sessions.json
+            php/mailKeys.json
+            php/forgotKeys.json
+            php/flags.json
+            php/commentFlags.json
+            php/blockedWords.json
+            php/discord.txt
+            php/accessCode.txt
+            php/status.txt
+            posts/**
+            logs/**
