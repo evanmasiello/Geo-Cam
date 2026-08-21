@@ -1,0 +1,128 @@
+name: Snapshot live site
+
+# Manual only. Pulls production down so it can be diffed against the repo.
+# Reading PHP source is impossible over HTTP, so FTP is the only way to see
+# what is actually running on the server.
+on:
+  workflow_dispatch:
+    inputs:
+      include_images:
+        description: 'Also download posts/*.png (slow, large)'
+        type: boolean
+        default: false
+      open_pr:
+        description: 'Commit the live code to a branch and open a PR against main'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Mirror the live site
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
+          INCLUDE_IMAGES: ${{ inputs.include_images }}
+        run: |
+          set -euo pipefail
+          mkdir -p snapshot
+
+          # Post images are the bulk of the site and are never deployed,
+          # so they are opt-in.
+          if [ "$INCLUDE_IMAGES" = "true" ]; then
+            exclude=""
+          else
+            exclude="--exclude-glob *.png"
+          fi
+
+          # Explicit FTPS on port 21 with full certificate verification,
+          # matching the deploy job. Password comes from the environment so
+          # it never appears in the process list.
+          lftp -u "$FTP_USERNAME" --env-password "ftp://$FTP_SERVER" <<EOF
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate true
+          set net:max-retries 3
+          set cmd:fail-exit true
+          mirror --verbose --parallel=4 $exclude "$REMOTE_DIR" snapshot/
+          bye
+          EOF
+
+          echo "--- snapshot tree ---"
+          find snapshot -type f | sort | head -100
+          echo "--- total: $(find snapshot -type f | wc -l) files ---"
+
+      - name: Separate code from live data
+        run: |
+          set -euo pipefail
+          # Credentials, session tokens and the webhook must not land in an
+          # artifact that anyone with repo access can download.
+          mkdir -p code
+          rsync -a --exclude='users.json' --exclude='sessions.json' \
+                   --exclude='mailKeys.json' --exclude='forgotKeys.json' \
+                   --exclude='flags.json' --exclude='commentFlags.json' \
+                   --exclude='discord.txt' --exclude='accessCode.txt' \
+                   --exclude='status.txt' --exclude='.ftpquota' \
+                   --exclude='logs/' \
+                   snapshot/ code/
+          echo "code files: $(find code -type f | wc -l)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: live-code-snapshot-${{ github.run_number }}
+          path: code/
+          retention-days: 30
+
+      # Overlay the live code onto a branch cut from main. The resulting PR
+      # diff is exactly "what production has that the repo does not" -- which
+      # is the thing that needs reviewing. Git cannot merge this itself: the
+      # live edits have no common ancestor in history.
+      - name: Open a reconciliation PR
+        if: ${{ inputs.open_pr }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git clone --quiet --branch main \
+            "https://x-access-token:$GH_TOKEN@github.com/${{ github.repository }}.git" repo
+          cd repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -B production-baseline
+
+          # Overlay only. No --delete: repo-only paths (tests/, docs/,
+          # .github/) are not on the server and must survive.
+          rsync -a --exclude='posts/' --exclude='logs/' ../code/ ./
+
+          if git diff --quiet && git diff --cached --quiet && [ -z "$(git status --porcelain)" ]; then
+            echo "Live site matches the repo -- nothing to reconcile."
+            exit 0
+          fi
+
+          git add -A
+          git commit --quiet -m "Snapshot of live site $(date -u +%Y-%m-%d)" \
+                     -m "Mirrored from production over FTP by the snapshot workflow. This is the code actually running on the server, including edits made directly through cPanel File Manager that were never committed."
+          git push --quiet --force-with-lease origin production-baseline
+
+          if gh pr view production-baseline --json number >/dev/null 2>&1; then
+            echo "Existing PR updated."
+          else
+            gh pr create --base main --head production-baseline \
+              --title "Reconcile live site with repo" \
+              --body "Code mirrored from production by the \`Snapshot live site\` workflow.
+
+          The diff is what the server has that \`main\` does not -- including files edited directly in cPanel File Manager. Review it by hand: these commits share no ancestor with the live edits, so git cannot merge them automatically.
+
+          Live data files (users.json, sessions.json, discord.txt, etc.) are excluded."
+          fi
+          gh pr view production-baseline --json url --jq .url

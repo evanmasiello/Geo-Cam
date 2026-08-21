@@ -118,6 +118,53 @@ Two usual causes:
 - **Whitespace in a secret.** A trailing space or newline pasted into GitHub is
   invisible in the UI and fatal at login. Re-paste it.
 
+## Empty FTP home / cannot change directory (curl exit 9)
+
+`curl: (9) Server denied you to change to the given directory` means login
+succeeded but the path was refused — credentials are fine, `FTP_REMOTE_DIR` is
+not.
+
+cPanel FTP accounts are **jailed** to their configured directory: after login
+that directory *is* `/`. If the *Directory* field was left at its default when
+the account was created, cPanel creates a new empty folder named after the
+account (e.g. `public_html/deploy`) and locks the account into it. The
+`Verify FTP credentials` step shows this as a home containing nothing but
+`.ftpquota`.
+
+Fix it in cPanel → *FTP Accounts* → *Actions* → *Change Directory*, pointing
+the account at the app folder (e.g. `public_html/geocam`, relative to home, no
+leading slash). Because the account remains jailed there, set
+`FTP_REMOTE_DIR` to `/`.
+
+Using the main cPanel account instead gives full home access and a
+`FTP_REMOTE_DIR` of `/public_html/<folder>/`, but hands the pipeline your
+primary hosting credentials. Prefer the scoped account.
+
+## Reconciling the live site with the repo
+
+Files edited directly in cPanel File Manager never reach git, so production
+can drift ahead of `main`. Deploying then silently *reverts* those edits.
+PHP source cannot be read over HTTP, so FTP is the only way to see what is
+actually running.
+
+Run the **Snapshot live site** workflow (*Actions* → *Run workflow*). It:
+
+1. Mirrors the live site over FTPS with `lftp`.
+2. Strips live data (`users.json`, `sessions.json`, `discord.txt`, …) so no
+   credentials or session tokens land in an artifact.
+3. Uploads the remaining code as a `live-code-snapshot-*` artifact.
+4. Overlays it onto a `production-baseline` branch and opens a PR against
+   `main`.
+
+That PR diff is precisely "what the server has that the repo does not".
+
+**The merge itself is manual.** Edits made on the server share no ancestor
+with `main`, so git has nothing to three-way merge and will not resolve them
+for you. Review the diff by hand and decide per file.
+
+Keep `dry-run: true` until that PR is merged. Deploying while the repo is
+behind production would roll the live site back.
+
 ## Backups
 
 The `backup` job runs before every deploy. It pulls the live JSON store down
