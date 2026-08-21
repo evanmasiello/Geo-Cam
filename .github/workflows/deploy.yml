@@ -235,6 +235,7 @@ jobs:
             AGENTS.md
             README.md
             tests/**
+            docs/**
             php/users.json
             php/sessions.json
             php/mailKeys.json
