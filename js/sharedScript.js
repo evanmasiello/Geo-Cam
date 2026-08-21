@@ -1,7 +1,7 @@
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 
-postMode = "norm";
+var postMode = "norm";
 
 const inputElementAccount = document.getElementById("deleteSlider");
 let isChangingAccount = false;
