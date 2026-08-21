@@ -39,10 +39,18 @@ jobs:
             echo "set ssl:verify-certificate true"
             echo "set net:max-retries 3"
             echo "set cmd:fail-exit true"
+            # Even inside the code directories there are multi-gigabyte
+            # non-code files: geocam.zip, geoCamBackup11_8_22.zip, admin.zip,
+            # php/error_log, and an extensionless 1.5 GB blob. Cap by size
+            # (range is min-max, so -4M means 0-4M) and name the known
+            # offenders; "*~*" drops stale editor backups like flags~.json.
+            F='--size-range=-4M'
+            F="$F --exclude-glob '*.zip' --exclude-glob '*.pdf'"
+            F="$F --exclude-glob 'error_log*' --exclude-glob '*~*'"
             # Root: files only, no descent into shop/, posts/, testBranches/.
-            printf 'mirror --verbose --no-recursion "%s" snapshot/\n' "$REMOTE_DIR"
+            printf 'mirror --verbose --no-recursion %s "%s" snapshot/\n' "$F" "$REMOTE_DIR"
             for d in php js css assets; do
-              printf 'mirror --verbose "%s%s" "snapshot/%s"\n' "$REMOTE_DIR" "$d" "$d"
+              printf 'mirror --verbose %s "%s%s" "snapshot/%s"\n' "$F" "$REMOTE_DIR" "$d" "$d"
             done
             echo "bye"
           } > mirror.lftp
@@ -62,7 +70,7 @@ jobs:
           echo "snapshot: ${size_mb} MB across ${files} files"
           # The app is a few hundred KB of code. Anything near this ceiling
           # means a mirror walked somewhere it should not have.
-          if [ "$size_mb" -gt 100 ]; then
+          if [ "$size_mb" -gt 50 ]; then
             echo "::error::Snapshot is ${size_mb} MB -- expected a few MB of code. Refusing to continue."
             exit 1
           fi
