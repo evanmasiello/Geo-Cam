@@ -37,12 +37,15 @@ jobs:
           set -euo pipefail
           mkdir -p snapshot
 
-          # Post images are the bulk of the site and are never deployed,
-          # so they are opt-in.
-          if [ "$INCLUDE_IMAGES" = "true" ]; then
-            exclude=""
-          else
-            exclude="--exclude-glob *.png"
+          # The app folder also contains a WordPress install, old test
+          # branches and thousands of post images -- none of which are in the
+          # repo or deployed. Mirroring them wastes hours and pulls old
+          # credentials onto the runner.
+          exclude="--exclude ^(posts|logs|shop|downloads|testBranches)/"
+
+          # Post images are the bulk of the site and are never deployed.
+          if [ "$INCLUDE_IMAGES" != "true" ]; then
+            exclude="$exclude --exclude-glob *.png --exclude-glob *.jpg --exclude-glob *.gif"
           fi
 
           # Explicit FTPS on port 21 with full certificate verification,
@@ -102,7 +105,9 @@ jobs:
 
           # Overlay only. No --delete: repo-only paths (tests/, docs/,
           # .github/) are not on the server and must survive.
-          rsync -a --exclude='posts/' --exclude='logs/' ../code/ ./
+          rsync -a --exclude='posts/' --exclude='logs/' \
+                   --exclude='shop/' --exclude='downloads/' \
+                   --exclude='testBranches/' ../code/ ./
 
           if git diff --quiet && git diff --cached --quiet && [ -z "$(git status --porcelain)" ]; then
             echo "Live site matches the repo -- nothing to reconcile."
