@@ -221,8 +221,8 @@ jobs:
           # >>> SAFETY SWITCH <<<
           # true  = rehearsal, connects and logs but writes nothing.
           # false = real deploy.
-          # Flip to false by hand when you are ready to go live.
-          dry-run: true
+          # Set to true again to rehearse a risky change before shipping it.
+          dry-run: false
           log-level: standard
           # NOTE: setting `exclude` REPLACES the action's defaults, so the
           # .git patterns have to be repeated here.
