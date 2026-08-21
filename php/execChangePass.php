@@ -66,12 +66,11 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
                 $time = strval(round(microtime(true)));
                 $sessionNew = hash("sha256", "session" . $users[$i]->user . $_POST["passNew"] . $time, false);
                 
+                $keptSessions = [];
                 for ($r=0; $r < count($sessions); $r++) {
-                    if ($sessions[$r]->userId == $uID) {
-                        unset($sessions[$r]);
-                    }
+                    if ($sessions[$r]->userId != $uID) array_push($keptSessions, $sessions[$r]);
                 }
-                $sessions = array_values($sessions);
+                $sessions = $keptSessions;
                 
                 $newSet = Array (
                     "key" => hash("sha256", $sessionNew, false),
