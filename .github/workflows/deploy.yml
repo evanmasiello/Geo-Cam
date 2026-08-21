@@ -34,12 +34,31 @@ jobs:
     needs: lint
     runs-on: ubuntu-latest
     steps:
+      # Bluehost's FTP certificate is issued for the physical server
+      # (e.g. box1234.bluehost.com), not usually for your domain. This prints
+      # the names the cert actually covers so FTP_SERVER can be set to match.
+      - name: Inspect FTP server certificate
+        continue-on-error: true
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+        run: |
+          echo "Certificate presented on port 21:"
+          openssl s_client -starttls ftp -connect "$FTP_SERVER:21" -servername "$FTP_SERVER" </dev/null 2>/dev/null \
+            | openssl x509 -noout -subject -issuer -ext subjectAltName \
+            || echo "could not read certificate"
+
       - name: Download live data files
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
+          # >>> TLS VERIFICATION SWITCH <<<
+          # "false" = verify the server's identity (correct, preferred).
+          # "true"  = still encrypted, but the server is not authenticated.
+          # Only set "true" if no hostname matches Bluehost's certificate.
+          # This matches the deploy action's own default (security: loose).
+          TLS_INSECURE: "false"
         run: |
           set -euo pipefail
 
@@ -61,8 +80,14 @@ jobs:
                     php/flags.json php/commentFlags.json php/blockedWords.json \
                     php/discord.txt php/accessCode.txt php/status.txt"
 
+          tls_opts="--ssl-reqd"
+          if [ "$TLS_INSECURE" = "true" ]; then
+            echo "::warning::TLS verification disabled -- traffic is encrypted but the server is not authenticated"
+            tls_opts="--ssl-reqd --insecure"
+          fi
+
           fetch() {
-            curl --ssl-reqd --fail --silent --show-error \
+            curl $tls_opts --fail --silent --show-error \
                  --user "$FTP_USERNAME:$FTP_PASSWORD" \
                  "ftp://$FTP_SERVER${REMOTE_DIR}$1" -o "backup/$1"
           }
@@ -114,6 +139,11 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
           port: 21
+          # Bluehost presents a publicly-trusted Sectigo wildcard for
+          # *.bluehost.com, so FTP_SERVER must be the box hostname
+          # (box2261.bluehost.com) rather than the domain. That makes full
+          # certificate verification possible; don't downgrade this to "loose".
+          security: strict
           server-dir: ${{ secrets.FTP_REMOTE_DIR }}
           # >>> SAFETY SWITCH <<<
           # true  = rehearsal, connects and logs but writes nothing.
