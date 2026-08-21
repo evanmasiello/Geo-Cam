@@ -26,3 +26,25 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 # Any changes to the directives between these markers will be overwritten.
 
 # END WordPress
+
+# BEGIN Geo-Cam asset caching
+# Asset references carry a content hash (?v=...) stamped at deploy time by
+# scripts/stamp-assets.py, so a changed file always arrives under a new URL
+# and the old one can be cached indefinitely. Anything WITHOUT the hash is
+# marked no-cache, so a reference the stamper missed can never go stale.
+# HTML is the index pointing at those hashed URLs and must always revalidate.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{QUERY_STRING} (^|&)v=
+    RewriteRule \.(js|css)$ - [E=HASHED_ASSET:1]
+</IfModule>
+<IfModule mod_headers.c>
+    <FilesMatch "\.(js|css)$">
+        Header set Cache-Control "public, max-age=31536000, immutable" env=HASHED_ASSET
+        Header set Cache-Control "no-cache" env=!HASHED_ASSET
+    </FilesMatch>
+    <FilesMatch "\.html$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>
+# END Geo-Cam asset caching
