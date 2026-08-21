@@ -47,7 +47,7 @@ if(isset($_POST["session"]) and file_exists("sessions.json")) {
             
             $userBlocked = [];
             
-            if ($users[$i]->blocked != null) $userBlocked = json_decode($users[$i]->blocked);
+            if (isset($users[$i]->blocked) && $users[$i]->blocked != null) $userBlocked = json_decode($users[$i]->blocked);
             
             if (in_array($uID,$userBlocked)) array_push($responseArr, $users[$i]->id);
         }

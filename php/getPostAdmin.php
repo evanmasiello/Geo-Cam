@@ -89,7 +89,7 @@ for ($i = count($posts)-1; $i >= 0; $i--) {
         
         $commentCount = 0;
         
-        if ($posts[$i]->comments != null) {
+        if (isset($posts[$i]->comments) && $posts[$i]->comments != null) {
             
             $postCommArr = json_decode($posts[$i]->comments);
             
