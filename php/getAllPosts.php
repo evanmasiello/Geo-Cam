@@ -36,6 +36,8 @@ for ($i = count($posts)-1; $i >= 0; $i--) {
             if ($users[$c]->id == $posts[$i]->user)         $userVar = $users[$c]->user;
         }
 
+        if ($posts[$i]->user == -1) $userVar = "deleted user";
+
         
         $finalPosts[$finalPostCount]->postedBy = $userVar;
         $finalPosts[$finalPostCount]->distance = distance($latPost, $longPost, $posts[$i]->lat, $posts[$i]->long);

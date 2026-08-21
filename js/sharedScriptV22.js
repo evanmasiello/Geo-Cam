@@ -1,7 +1,7 @@
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 
-var postMode = "norm";
+postMode = "norm";
 
 const inputElementAccount = document.getElementById("deleteSlider");
 let isChangingAccount = false;
@@ -1128,13 +1128,13 @@ function manageFollowed() {
             // if (allUsers[y].id == followedUsers[x]) {
                 // console.log("In the if");
                 //blockedUsersNames.push(allUsers[y].user);
-                document.getElementById("listOfFollowed").innerHTML += "<p id='unfollowP" + followedUsers[x].id + "' class='followP'><strong>" + followedUsers[x].name + "</strong><button class='undoButtons' onclick='unfollowUser(" + followedUsers[x].id + ")'>Unfollow</button></p>"
+                document.getElementById("listOfFollowed").innerHTML += "<p id='unfollowP" + followedUsers[x].id + "' class='followP'><strong>" + followedUsers[x].name + "</strong><button class='undoButtons' onclick='unfollowUser(" + followedUsers[x].id + ")'>Remove</button></p>"
             // }
         // }
     }
     
     if (followedUsers.length <= 0) {
-        document.getElementById("listOfFollowed").innerHTML = "<p>You haven't followed any users</p>";
+        document.getElementById("listOfFollowed").innerHTML = "<p>You don't have any users in your circle</p>";
     } else {
         document.getElementById("listOfFollowed").innerHTML += "<br>";
     }
@@ -1510,12 +1510,12 @@ function refreshFollowing() {
 
     for (var x=0; x < followedUsers.length; x++) {
         if (followedUsers[x].name != "undefined") {
-            document.getElementById("listOfFollowed").innerHTML += "<p id='unfollowP" + followedUsers[x].id + "' class='followP'><strong>" + followedUsers[x].name + "</strong><button class='undoButtons' onclick='unfollowUser(" + followedUsers[x].id + ")'>Unfollow</button></p>"
+            document.getElementById("listOfFollowed").innerHTML += "<p id='unfollowP" + followedUsers[x].id + "' class='followP'><strong>" + followedUsers[x].name + "</strong><button class='undoButtons' onclick='unfollowUser(" + followedUsers[x].id + ")'>Remove</button></p>"
         }
     }
     
     if (followedUsers.length <= 0) {
-        document.getElementById("listOfFollowed").innerHTML = "<p>You haven't followed any users</p>";
+        document.getElementById("listOfFollowed").innerHTML = "<p>You haven't added any users to your circle</p>";
     } else {
         document.getElementById("listOfFollowed").innerHTML += "<br>";
     }
@@ -1558,8 +1558,8 @@ function followUser(followid) {
                         followedUsers = JSON.parse(response);
                         
                        try {
-                           document.getElementById("followButtonProfile").innerHTML = "Unfollow";
-                           document.getElementById("followButtonProfile2").innerHTML = "Unfollow";
+                           document.getElementById("followButtonProfile").innerHTML = "Remove";
+                           document.getElementById("followButtonProfile2").innerHTML = "Remove";
                             document.getElementById("followButtonProfile").setAttribute("onclick", "unfollowUser("+ followedUsers[followedUsers.length-1].id + ")");
                        } catch(err) {
                            console.log("follow error " + err);
@@ -1573,7 +1573,7 @@ function followUser(followid) {
                         
                     } else if (response == "emailNotConfirmed") {
                        //console.log("Like Failed");
-                        alert("Uh oh! You need to confirm your email before you can follow users");
+                        alert("Uh oh! You need to confirm your email before you can add users to your circle");
                     } else if (response == "userNotExists") {
                        //console.log("Like Failed");
                         alert("Uh oh! It seems like there isn't a user with that name");
@@ -1636,15 +1636,15 @@ function unfollowUser(followid) {
                                if (followedUsers[c].id == followid) followUserName = followedUsers[c].name;
                            }
                            
-                           document.getElementById("followButtonProfile").innerHTML = "Follow";
-                           document.getElementById("followButtonProfile2").innerHTML = "Follow";
+                           document.getElementById("followButtonProfile").innerHTML = "Add to Circle";
+                           document.getElementById("followButtonProfile2").innerHTML = "Add to Circle";
                             document.getElementById("followButtonProfile").setAttribute("onclick", "followUser('"+ followUserName + "')");
                        } catch(err) {
                            
                        }
                        
                         try {
-                            //unfollowP
+                            //unfollowP 
                             document.getElementById("unfollowP" + followid).style.display = "none";
                        } catch(err) {
                            
@@ -1667,7 +1667,7 @@ function unfollowUser(followid) {
                         
                     } else if (response == "emailNotConfirmed") {
                        //console.log("Like Failed");
-                        alert("Uh oh! You need to confirm your email before you can follow users");
+                        alert("Uh oh! You need to confirm your email before you can add users to your circle");
                     } else {
                         alert("Uh oh! That didn't work, please try again later");
                     }

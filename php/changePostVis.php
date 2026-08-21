@@ -84,6 +84,9 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["v
                                     if ($_POST["vis"] == "following") {
                                         $posts[$x]->visibility = "following";
                                         $visVar = "following";
+                                    } elseif ($_POST["vis"] == "all-local") {
+                                        $posts[$x]->visibility = "all-local";
+                                        $visVar = "all-local";
                                     } else {
                                         $posts[$x]->visibility = "all";
                                         $visVar = "all";

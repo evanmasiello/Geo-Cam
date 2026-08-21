@@ -2,9 +2,10 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width">
+    <!-- <meta name="viewport" content="width=device-width"> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0 maximum-scale=1.0 user-scalable=no" charset="utf-8" />
     <title>Geo Cam</title>
-    <link href="./css/styleV84.css" rel="stylesheet" type="text/css" />
+    <link href="./css/styleV85.css" rel="stylesheet" type="text/css" />
     <link rel="icon" href="./assets/Icon.png">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2258919223240321"
          crossorigin="anonymous"></script>
@@ -14,7 +15,7 @@
   <div id="blocker" class="heading sticky">
   </div>
   <div id="header" class="heading sticky">
-    <div id="leftIcon" class="headerDiv"><i class="fa-solid fa-circle-info headerIcon" onclick="showAbout()"></i><i class="fa-solid fa-moon headerIcon" id="colorMode" onclick="changeColorMode()"></i></div>
+    <div id="leftIcon" class="headerDiv"><i class="fa-solid fa-circle-info headerIcon" onclick="showAbout()"></i><i id="localButton" class="fa-solid fa-location-dot headerIcon" onclick="switchToGlobal()" aria-hidden="true" style="margin-left: 2vw;"></i><i id="globalButton" class="fa-solid fa-globe headerIcon" onclick="switchToLocal()" aria-hidden="true" style="display: none; margin-left: 2vw;"></i></div>
     <div id="headerDivMain" class="headerDiv"><h5 style="font-size:6vw; text-align: center; margin: 0;">Geo <i class='fas'>&#xf3c5;</i> Cam</h5></div>
     <div id="rightIcon" class="headerDiv"><i id="settingsIcon" class="fa-solid fa-sliders headerIcon" onclick="showFilters()"></i><i id="userIcon" onclick="showLogin()" class="fa-solid fa-user headerIcon"></i></div>
   </div>
@@ -60,7 +61,7 @@
         <button class="editAccountButtons" onclick="changeName()">Change Username</button><br><br>
         <button class="editAccountButtons" onclick="changePass()">Change Password</button><br><br>
         <button class="editAccountButtons" onclick="changeEmail()">Change Email</button><br><br></span>
-        <button class="accountButtons" onclick="manageFollowed()">Manage Following</button><br><br>
+        <button class="accountButtons" onclick="manageFollowed()">Manage Your Circle</button><br><br>
         <button class="accountButtons" onclick="manageBlocked()">Manage Blocked</button><br><br>
         <button class="accountButtons" onclick="deleteAccount()">Delete Account</button><br><br>
         <br>
@@ -81,10 +82,10 @@
         <button class="accountButtons" onclick="showLoggedIn()">Go Back</button>
     </div>
     <div id="manageFollowed" style="display: none;">
-        <p>You can follow users by entering their username below</p><br>
+        <p>You can add users to your circle by entering their name below</p><br>
         <p class="halfFields">Name: <input class="halfFields" type="text" name="username" id="nameManageFollow"></p><br>
-        <button class="accountButtons" onclick="followUserByName()">Follow</button><br><br>
-        <p>You can unfollow users using the list below</p><br>
+        <button class="accountButtons" onclick="followUserByName()">Add To Circle</button><br><br>
+        <p>You can remove users from your circle using the list below</p><br>
         <div id="listOfFollowed"></div><br>
         <button class="accountButtons" onclick="showLoggedIn()">Go Back</button>
     </div>
@@ -125,8 +126,8 @@
         <option value="all">All Posts</option>
         <option value="liked">Posts I've Liked</option>
         <option value="posted">Posts I've Made</option>
-        <option value="followposted">Posts Made By People I Follow</option>
-        <option value="followliked">Posts Liked By People I Follow</option>
+        <option value="followposted">Posts Made By People In My Circle</option>
+        <option value="followliked">Posts Liked By My Circle</option>
       </select>
     </p>
     <br><br>
@@ -168,7 +169,8 @@
     <h2 id="changeVisText" class="center">Change Post Visibility</h2>
     <p id="selectTextFilt">Show this post to: <select id="editPostVisSelect" name="Visibility">
         <option value="all">Everyone</option>
-        <option value="following">Only people I follow</option>
+        <option value="all-local">Everyone Locally (Won't be shown on the global feed)</option>
+        <option value="following">Only People In My Circle</option>
       </select></p>
     <button id="editPostVis" class="flagButtons" onclick="executeChangePostVis()">Confirm</button><button id="cancelDeletePost" class="flagButtons" onclick="hideWindows()">Cancel</button>
     <h2 id="deletePostText" class="center">Delete Post</h2>
@@ -198,10 +200,10 @@
   </div>
   <div id="profileDisplay">
       <div id="mainProfileDisplay">
-          <br><p id="closeButton" width="5vw" onclick="closeProfile()"><i class="fa-solid fa-arrow-left"></i></p><p class="mainProfileP"><i class="mainUserIcon fa-solid fa-user"></i><br><strong><span id="userNameProfile"></span></strong><br><span id="actionButtons"><button id="blockButtonProfile" class="profileButtons">Block</button> <button id="followButtonProfile" class="profileButtons">Follow</button><br></span><span id="thisUser">This user has made </span><span id="profilePostCount"></span> posts near you.</p>
+          <br><p id="closeButton" width="5vw" onclick="closeProfile()"><i class="fa-solid fa-arrow-left"></i></p><p class="mainProfileP"><i class="mainUserIcon fa-solid fa-user"></i><br><strong><span id="userNameProfile"></span></strong><br><span id="actionButtons"><button id="blockButtonProfile" class="profileButtons">Block</button> <button id="followButtonProfile" class="profileButtons">Add To Circle</button><br></span><span id="thisUser">This user has made </span><span id="profilePostCount"></span> posts near you.</p>
       </div>
       <div id="ProfileDisplay2">
-          <br><p id="closeButton2" width="5vw" onclick="closeProfile()"><i class="fa-solid fa-arrow-left"></i></p><p class="mainProfileP"><i class="mainUserIcon fa-solid fa-user"></i><br><strong><span id="userNameProfile2"></span></strong><br><span id="actionButtons2"><button id="blockButtonProfile2" class="profileButtons2">Block</button> <button id="followButtonProfile2" class="profileButtons2">Follow</button><br></span><span id="thisUser2">This user has made </span><span id="profilePostCount2"></span> posts near you.</p>
+          <br><p id="closeButton2" width="5vw" onclick="closeProfile()"><i class="fa-solid fa-arrow-left"></i></p><p class="mainProfileP"><i class="mainUserIcon fa-solid fa-user"></i><br><strong><span id="userNameProfile2"></span></strong><br><span id="actionButtons2"><button id="blockButtonProfile2" class="profileButtons2">Block</button> <button id="followButtonProfile2" class="profileButtons2">Add To Circle</button><br></span><span id="thisUser2">This user has made </span><span id="profilePostCount2"></span> posts near you.</p>
       </div>
     </div>
     <div id="profileDisplayMy">
@@ -229,14 +231,14 @@
     </div>
   <div id="footer" class="stickyFoot">
     <div class="left footerSubDivide footerLink footerLinkL">
-      <a class="footLink" href="camera?_=flash"><i class="fa-solid fa-camera"></i><br></a>
+      <a class="footLink" href="camera?_=24"><i class="fa-solid fa-camera"></i><br></a>
     </div>
     <div class="right footerSubDivide">
       <a class="footLink selectedPage" href=""><i class="fa-solid fa-home"></i><br></a>
     </div>
     </div>
-  <script src="./js/indexScriptV71.js"></script>
-  <script src="./js/sharedScriptV21.js"></script>
+  <script src="./js/indexScriptV80.js"></script>
+  <script src="./js/sharedScriptV22.js"></script>
   <script src="https://kit.fontawesome.com/7ef045b943.js" crossorigin="anonymous"></script>
   </body>
 </html>

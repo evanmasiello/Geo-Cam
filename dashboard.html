@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Geo Cam</title>
+    <link rel="icon" href="./assets/Icon.png">
+    <link href="./css/styleV53.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body style="margin: 0px 0px 0px 0px">
+    <div id="headerText">
+        <button class="topBttn" onClick="window.location.reload();">Refresh Page</button><button id="updateData" class="topBttn" onclick="updateDashData()">Refresh Data</button>
+    </div>
+    <div id="dataContent">
+        <p id="dataP">Posts: <span id="postTotal"></span>&nbsp;&nbsp;Users: <span id="usersTotal"></span>&nbsp;&nbsp;Posts Day: <span id="postsDay"></span>&nbsp;&nbsp;Users Day: <span id="usersDay"></span></p>
+    </div>
+    <div id="content">
+    </div>
+    <button class="bottomBttn" onClick="backPost();">Back A Post</button>
+    <button class="bottomBttn" onClick="getPosts();">Reshuffle Posts</button>
+    <button class="bottomBttn" onClick="forwardPost();">Forward A Post</button>
+    <script>
+    
+    var timeOutId = null;
+    
+    function updateDashData() {
+        
+        timeOutId = null;
+        
+        var xmlhttp = new XMLHttpRequest();
+    
+        var getFile = './php/getDashboardData.php?_=' + Date.now();
+    
+        xmlhttp.open('GET', getFile, true);
+    
+        xmlhttp.onreadystatechange = function() {
+            if (xmlhttp.readyState == 4) {
+                if (xmlhttp.status == 200) {
+                
+                    timeOutId = null;
+                
+                    var response = xmlhttp.responseText;
+                    
+                    reponseObj = JSON.parse(response);
+                    
+                    document.getElementById("postTotal").innerHTML = reponseObj.totalPosts;
+                    document.getElementById("usersTotal").innerHTML = reponseObj.totalUsers;
+                    document.getElementById("postsDay").innerHTML = reponseObj.postsToday;
+                    document.getElementById("usersDay").innerHTML = reponseObj.usersToday;
+                    
+                    if (reponseObj.postsToday > 0) {
+                        document.getElementById("postsDay").style.color = "green";
+                    }
+                    
+                    if (reponseObj.usersToday > 0) {
+                        document.getElementById("usersDay").style.color = "green";
+                    }
+                
+                    timeOutId = setTimeout(function() { updateDashData(); }, 600000);
+                
+                }
+            }
+        };
+        
+        xmlhttp.send();
+    
+    }
+    
+    updateDashData();
+    getPosts();
+    
+    function forceUpdate() {
+        if (timeOutId !== null) {
+            clearTimeout(timeOutId);
+        }
+        
+        updateDashData();
+    }
+    
+    var allPosts = [];
+    
+    var postTimeOutId = null;
+    
+    var currId = 0;
+    
+    function displayPost() {
+        
+        if (postTimeOutId !== null) {
+            clearTimeout(postTimeOutId);
+        }
+        
+        if (currId >= allPosts.length) {
+            currId = 0;
+        }
+        
+        if (currId < 0) {
+            currId = allPosts.length - 1;
+        }
+        
+        postTimeOutId = null;
+        
+            var object = allPosts[currId];
+            
+            var distanceNum = object.distance;
+            var distanceString = "";
+    
+            if (distanceNum < 0.5) {
+                //console.log("Converting to feet");
+                distanceNum = Math.round(distanceNum * 5280);
+                if (distanceNum == 1) {
+                    distanceString += distanceNum + " foot";
+                } else {
+                    distanceString += distanceNum + " feet";
+                }
+            } else {
+                if (distanceNum == 1) {
+                    distanceString += distanceNum.toFixed(4) + " mile";
+                } else {
+                    distanceString += distanceNum.toFixed(4) + " miles";   
+                }
+            }
+    
+            var timeServer = object.time;
+    
+            var milliseconds = timeServer * 1000;
+    
+            var dateObj = new Date(milliseconds);
+            var month = dateObj.getUTCMonth() + 1; //months from 1-12
+            var day = dateObj.getUTCDate();
+            var year = dateObj.getUTCFullYear();
+    
+            var newdate = month + "/" + day + "/" + year;
+            
+            var heartClass = "fa-regular";
+            var flagClass = "fa-flag";
+            
+            var likedPosts = [];
+            var userId = -1;
+            
+            if (likedPosts.includes(object.id)) heartClass = "fa-solid";
+            if (object.user == userId) flagClass = "fa-eye-slash";
+        
+            var userName = object.postedBy;
+            
+            if (userName == "Noah") userName = userName + ' <i class="fa-solid fa-circle-check"></i>';
+            
+            var feedString = "<div id='postContainter" + object.id + "' class='postContainer'>";
+            
+            feedString += "<p id='profile" + object.id + "' class='userText' onclick='showProfile(" + object.user + ")'>"+ userName + "  <i class='fa-solid fa-user'></i></p>";
+
+            feedString += "<img id='" + "img" + object.id + "' src='./posts/" + object.image + "'> <div id='" + "cap" + object.id + "'class='caption'><div class='capLeft'><p> <span id='locationSpan'><i class='fa-solid fa-location-dot'></i> " + distanceString + "</span> <i class='fa-solid fa-calendar'></i> " + newdate + " </p></div><div class='capRight'><p> <span id='likes" + object.id + "'>" + displayNum(object.likes) + "</span> <i id='heart" + object.id + "' class='" + heartClass + " fa-heart'></i>  <i id='flag" + object.id + "' class='fa-solid " + flagClass + "'></i></p></div></div>" ;
+            
+            document.getElementById("content").innerHTML = feedString;
+            
+            postTimeOutId = setTimeout(function() {currId++; displayPost(); }, 60000);
+    }
+    
+    function backPost() {
+        
+        console.log("cur id is " + currId);
+        
+        currId--;
+        
+        console.log("cur id is now " + currId);
+        
+        displayPost();
+    }
+    
+    function forwardPost() {
+        currId++;
+        
+        displayPost();
+    }
+    
+    function shuffle(array) {
+      let currentIndex = array.length,  randomIndex;
+    
+      // While there remain elements to shuffle.
+      while (currentIndex != 0) {
+    
+        // Pick a remaining element.
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+    
+        // And swap it with the current element.
+        [array[currentIndex], array[randomIndex]] = [
+          array[randomIndex], array[currentIndex]];
+      }
+    
+      return array;
+    }
+    
+    function getPosts() {
+        
+        if (postTimeOutId !== null) {
+            clearTimeout(postTimeOutId);
+        }
+        
+        postTimeOutId = null;
+        
+        var formDataFeed = new FormData();
+        formDataFeed.append('lat', 38.9935309);
+        formDataFeed.append('long', -76.9424481);
+        formDataFeed.append('superSecretPassword', "ligmaCock");
+        
+        var xmlhttp = new XMLHttpRequest();
+    
+        var getFile = './php/getAllPosts.php?_=' + Date.now();
+    
+        xmlhttp.open('POST', getFile, true);
+    
+        xmlhttp.onreadystatechange = function() {
+            if (xmlhttp.readyState == 4) {
+                if (xmlhttp.status == 200) {
+                
+                    postTimeOutId = null;
+                
+                    var response = xmlhttp.responseText;
+                    
+                    allPosts = JSON.parse(response);
+                    
+                    currId = 0;
+                
+                    shuffle(allPosts);
+                
+                    displayPost();
+                
+                }
+            }
+        };
+        
+        xmlhttp.send(formDataFeed);
+    
+    }
+    
+    function displayNum(num) {
+        if (num > 999999) {
+            num = num / 1000000;
+            num = num.toFixed(1);
+            if (num - Math.floor(num) == 0) num = Math.floor(num);
+            num = num + "m";
+        }
+        if (num > 99999) {
+            num = num / 1000;
+            num = num.toFixed(1);
+            if (num - Math.floor(num) == 0) num = Math.floor(num);
+            num = num + "k";
+        }
+        if (num > 9999) {
+            num = num / 1000;
+            num = num.toFixed(1);
+            if (num - Math.floor(num) == 0) num = Math.floor(num);
+            num = num + "k";
+        }
+        if (num > 999) {
+            num = num / 1000;
+            num = num.toFixed(1);
+            if (num - Math.floor(num) == 0) num = Math.floor(num);
+            num = num + "k";
+        }
+        
+        return num;
+    }
+    
+    </script>
+    <script src="https://kit.fontawesome.com/7ef045b943.js" crossorigin="anonymous"></script>
+    <style>
+    button {
+        color: black;
+        background-color: white;
+        font-size: 3vw;
+    }
+    #dataP {
+        font-size: 4.5vw;
+        margin: 0px 0px 0px 0px;
+        text-align: center;
+        margin-top: 1vw;
+        margin-bottom: 1vw;
+    }
+    #postTotal {
+        color: blue;
+    }
+    #usersTotal {
+        color: blue;
+    }
+    #postsDay {
+        color: red;
+    }
+    #usersDay {
+        color: red;
+    }
+    .topBttn {
+        width: 30%;
+        margin-left: 13.3333333333%;
+    }
+    .bottomBttn {
+        width: 25%;
+        margin-left: 5.333333333%;
+    }
+    .postContainer {
+        margin-bottom: 3vw;
+    }
+    </style>
+  </body>
+</html>

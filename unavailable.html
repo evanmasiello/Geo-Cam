@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h1 style="text-align: center;" onclick="countUpdate()">Geo Gram Is Unavailable</h1>
+<script>
+//if your reading this code ligma cock
+
+var count = 0;
+
+const queryString = window.location.search;
+const urlParams = new URLSearchParams(queryString);
+var site = urlParams.get('site');
+
+function countUpdate() {
+    count ++;
+    
+    if (count >= 5) {
+        if (site == "camera") {
+            window.location.replace("camera?access=1");
+        } else {
+            window.location.replace("index?access=1");   
+        }
+        setCookie("access", 1, 9999);
+    }
+    
+    
+    
+}
+
+function setCookie(cname, cvalue, exdays) {
+  const d = new Date();
+  d.setTime(d.getTime() + (exdays*24*60*60*1000));
+  let expires = "expires="+ d.toUTCString();
+  document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+</script>
+</body>
+</html>

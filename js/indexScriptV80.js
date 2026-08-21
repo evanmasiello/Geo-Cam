@@ -20,7 +20,7 @@ console.log("blocked length: " + blockedUsers.length);
 
 function userIsFollowed(id) {
     
-    for (var c=0; c < followedUsers.length; c++) {
+    for (var c=0; c < followedUsers.length; c++) { 
         if (followedUsers[c].id == id) {
             return true;
             // showProfileUserName = followedUsers[c].name;
@@ -29,6 +29,46 @@ function userIsFollowed(id) {
     
     return false;
     
+}
+
+var doubleClickTime = 0;
+var doubleClickId = 0;
+
+function doubleClickLike(postID) {
+    var localClickTime = Date.now();
+    
+    console.log("click at: " + localClickTime);
+    
+    if ((localClickTime - doubleClickTime) < 500 && postID == doubleClickId) {
+        likePost(postID);
+        doubleClickTime = 0;
+        doubleClickId = 0;
+    } else {
+        doubleClickTime = localClickTime;
+        doubleClickId = postID;
+    }
+}
+
+function switchToGlobal() {
+    document.getElementById("localButton").style.display = "none";
+    document.getElementById("globalButton").style.display = "inline";
+    
+    oldSelectField = document.getElementById("sort").value;
+    
+    document.getElementById("sort").value = "age-new";
+    
+    getGlobalPosts();
+} 
+
+var oldSelectField = "";
+
+function switchToLocal() {
+    document.getElementById("localButton").style.display = "inline";
+    document.getElementById("globalButton").style.display = "none";
+    
+    document.getElementById("sort").value = oldSelectField; 
+    
+    showPosts();
 }
 
 console.log("is user blocked: " + userIsBlocked(2));
@@ -43,6 +83,11 @@ function userIsBlocked(id) {
     }
     
     return false;
+    
+}
+
+function toggleLocality() {
+    
     
 }
 
@@ -430,14 +475,14 @@ function showPosts() {
                     //document.getElementById("offsetDiv").style.display = "block";
                 } else if (xmlhttp.responseText === "[]") {
                    //console.log("bad response");
-                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you, try making one.</h2>";
+                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you.<br><br>Try making one or switching to the global feed using the location button!</h2>";
                     //document.getElementById("offsetDiv").style.display = "block";
                     maxDist = 50;
                     document.getElementById("mileRange").max = maxDist * 5280;
                     document.getElementById("mileRange").value = maxDist * 5280;
                     document.getElementById("milesDisplay").innerHTML = maxDist + " miles";
                 } else if (xmlhttp.responseText === "[null]") {
-                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you, try making one.</h2>";
+                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you.<br><br>Try making one or switching to the global feed using the location button!</h2>";
                     //document.getElementById("offsetDiv").style.display = "block";
                     maxDist = 50;
                     document.getElementById("mileRange").max = maxDist * 5280;
@@ -601,12 +646,12 @@ function showPostsByMe() {
                     //document.getElementById("offsetDiv").style.display = "block";
                 } else if (xmlhttp.responseText === "[]") {
                    //console.log("bad response");
-                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you, try making one.</h2>";
+                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you.<br><br>Try making one or switching to the global feed using the location button!</h2>";
                     //document.getElementById("offsetDiv").style.display = "block";
                 } else if (xmlhttp.responseText === "invalidSession") {
                     document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! We couldn't verify your session.</h2>";
                 } else if (xmlhttp.responseText === "[null]") {
-                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you, try making one.</h2>";
+                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you.<br><br>Try making one or switching to the global feed using the location button!</h2>";
                     //document.getElementById("offsetDiv").style.display = "block";
                 } else {
                     
@@ -667,6 +712,114 @@ function showPostsByMe() {
 
 }
 
+function getGlobalPosts() {
+    document.getElementById("feed").innerHTML = "<br><div class='loader'></div>";
+
+    var formDataFeed = new FormData();
+    
+    if (lat != null && long != null) { 
+        formDataFeed.append('lat', lat);
+        formDataFeed.append('long', long);
+    }
+
+    var xmlhttp = new XMLHttpRequest();
+
+    var getFile = './php/getGlobalFeed.php?_=' + Date.now();
+    
+   //console.log("getFile is " + getFile);
+
+    xmlhttp.open('POST', getFile, true);
+
+    xmlhttp.onreadystatechange = function() {
+        if (xmlhttp.readyState == 4) {
+            if (xmlhttp.status == 200) {
+                //alert("chenging feed");
+                //console.log("changing feed");
+
+                console.log("getting global feed");
+              console.log("response is: " + xmlhttp.responseText);
+
+                if (xmlhttp.responseText == "noLocation") {
+                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! We can't tell where you are. Please allow us to access your location and reload.</h2>";
+                    //document.getElementById("offsetDiv").style.display = "block";
+                } else if (xmlhttp.responseText === "[]") {
+                   //console.log("bad response");
+                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you.<br><br>Try making one or switching to the global feed using the location button!</h2>";
+                    //document.getElementById("offsetDiv").style.display = "block";
+                } else if (xmlhttp.responseText === "invalidSession") {
+                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! We couldn't verify your session.</h2>";
+                } else if (xmlhttp.responseText === "[null]") {
+                    document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you.<br><br>Try making one or switching to the global feed using the location button!</h2>";
+                    //document.getElementById("offsetDiv").style.display = "block";
+                } else {
+                    
+                    try {
+                        imageArray = JSON.parse(xmlhttp.responseText);
+                    } catch (e) {
+                        imageArray = [];
+                    }
+                    
+                    console.log("global feed repsonse is: " + xmlhttp.responseText);
+                    
+                    accessCode = imageArray[0].accessCode;
+
+                    maxDist = 1;
+                    
+                    if (imageArray.length > 0) timeMin = imageArray[0].minTime;
+                    if (imageArray.length > 0 && imageArray[0].maxDist != undefined && imageArray[0].maxDist != null) maxDist = imageArray[0].maxDist;
+                    
+                    document.getElementById("mileRange").max = maxDist * 5280;
+                    document.getElementById("mileRange").value = maxDist * 5280;
+                    
+                    setCSSProperty();
+                    
+                    var output = document.getElementById("milesDisplay");
+                    output.innerHTML = slider.value/5280 + " mile";
+                      
+                      if (maxDist < 0.5) {
+                        maxDist = maxDist * 5280;
+                        if (maxDist == 1) {
+                          output.innerHTML = Math.round(maxDist) + " foot";
+                        } else {
+                          output.innerHTML = Math.round(maxDist) + " feet";
+                        }
+                      } else {
+                        if (maxDist == 1) {
+                          output.innerHTML = maxDist.toFixed(2) + " mile";
+                        } else {
+                          output.innerHTML = maxDist.toFixed(2) + " miles";   
+                        }
+                      }
+                      
+                    var distanceSlider = document.getElementById("mileRange");
+  
+                    distanceInput = distanceSlider.value / 5280;
+
+                    document.getElementById("dateStart").min = timeMin;
+
+                    document.getElementById("feed").innerHTML = "";
+
+                    sortImages();
+                    
+                    initDateFilters(); 
+                    
+                    document.getElementById("mileRange").value = (maxDist * 5280) - 1;
+                    
+                    sortImages();
+                    
+                    document.getElementById("mileRange").value = (maxDist * 5280);
+                    
+                    sortImages();
+                    
+                }
+            }
+        }
+    };
+    
+    xmlhttp.send(formDataFeed);
+
+}
+
 var fadeTimeout = 0;
 
 var isShown = true;
@@ -715,7 +868,7 @@ function display(jsonInfo) {
     
     if (jsonInfo.length == 0) {
         //document.getElementById("offsetDiv").style.display = "block";
-        document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you, try making one.</h2>";
+        document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you.<br><br>Try making one or switching to the global feed using the location button!</h2>";
     } else {
         document.getElementById("feed").innerHTML = "";
         //document.getElementById("offsetDiv").style.display = "none";
@@ -900,7 +1053,7 @@ function fillPics(jsonInfo) {
            //<img id=\"loadingOverlay" + object.id + "\" class=\"loader overlayFeed src='./assets/loading.gif'>
            //loading='lazy'
 
-            feedString += "<div class='imageWrapper'><div id='loadingOverlay" + object.id + "' class='dot-flashing overlayFeed'></div><img id='" + "img" + object.id + "' src='./posts/post" + object.id + ".png' style=\" background-repeat: no-repeat; background-position: center; background-origin: padding-box padding-box; background-size:" + parent.innerWidth + " " + parent.innerWidth + "; background: url(\'./posts/smallPost" + object.id + ".jpg\'); background-size:100% 100%;\" onload='imageLoaded(" + object.id + ");'></div> <div id='" + "cap" + object.id + "'class='caption'><div class='capLeft'><p> <span id='locationSpan'><i class='fa-solid fa-location-dot'></i> " + distanceString + "</span> <i class='fa-solid fa-calendar'></i> " + newdate + " </p></div><div class='capRight'><p> <span id='likes" + object.id + "'>" + displayNum(object.likes, false) + "</span> <i id='heart" + object.id + "' onclick='likePost(" + object.id + ")' class='" + heartClass + " fa-heart'></i>  <i id='flag" + object.id + "' class='fa-solid " + flagClass + "' onclick='flagPost(" + object.id + ")'></i></p></div>";
+            feedString += "<div class='imageWrapper'><div id='loadingOverlay" + object.id + "' class='dot-flashing overlayFeed'></div><img id='" + "img" + object.id + "'onclick='doubleClickLike(" + object.id + ")' src='./posts/post" + object.id + ".png' style=\" background-repeat: no-repeat; background-position: center; background-origin: padding-box padding-box; background-size:" + parent.innerWidth + " " + parent.innerWidth + "; background: url(\'./posts/smallPost" + object.id + ".jpg\'); background-size:100% 100%;\" onload='imageLoaded(" + object.id + ");'></div> <div id='" + "cap" + object.id + "'class='caption'><div class='capLeft'><p> <span id='locationSpan'><i class='fa-solid fa-location-dot'></i> " + distanceString + "</span> <i class='fa-solid fa-calendar'></i> " + newdate + " </p></div><div class='capRight'><p> <span id='likes" + object.id + "'>" + displayNum(object.likes, false) + "</span> <i id='heart" + object.id + "' onclick='likePost(" + object.id + ")' class='" + heartClass + " fa-heart'></i>  <i id='flag" + object.id + "' class='fa-solid " + flagClass + "' onclick='flagPost(" + object.id + ")'></i></p></div>";
             
             var styleAlt = "display: none;";
             var commentButtonString = " - <span id='showComm" + object.id + "'>Show</span><span id='hideComm" + object.id + "' style='display:none;'>Hide</span> <span id='countComm" + object.id + "'>" + displayNum(object.commentCount, true) + "</span> Comment<span id='multiComm" + object.id + "'>s</span> - ";
@@ -983,6 +1136,9 @@ function fillPics(jsonInfo) {
             
             if (object.visibility == "following" && postMode == "admin") {
                 feedString += "<br><br><span style='text-align: center; width: 100%;'>This post can only be seen by people this user follows</span>";
+            } 
+            if (object.visibility == "all-local" && postMode == "admin") {
+                feedString += "<br><br><span style='text-align: center; width: 100%;'>This post can only be seen by people locally</span>";
             }
             
             feedString += "</p></div>";
@@ -1012,7 +1168,7 @@ function fillPics(jsonInfo) {
         counter++;
         
         if (counter >= jsonInfo.length && PostsDisplayed == 0) {
-            document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you, try making one.</h2>";
+            document.getElementById("feed").innerHTML = "<h2 class='contentText'>Uh oh! It doesn't look like there are any posts near you.<br><br>Try making one or switching to the global feed using the location button!</h2>";
         }
         
         setPadderHeight();
@@ -2294,23 +2450,19 @@ function showProfile(id, postId) {
         document.getElementById("blockButtonProfile").innerHTML = "Unblock";
         document.getElementById("blockButtonProfile2").innerHTML = "Unblock";
         document.getElementById("blockButtonProfile").onclick = function() { unblockUser(id); };
-        document.getElementById("blockButtonProfile2").onclick = function() { unblockUser(id); };
     } else {
+        document.getElementById("blockButtonProfile").onclick = function() { blockUser(uname); };
         document.getElementById("blockButtonProfile").innerHTML = "Block";
         document.getElementById("blockButtonProfile2").innerHTML = "Block";
-        document.getElementById("blockButtonProfile").onclick = function() { blockUser(uname); };
-        document.getElementById("blockButtonProfile2").onclick = function() { blockUser(uname); };
     }
     if (userIsFollowed(id)) {
-        document.getElementById("followButtonProfile").innerHTML = "Unfollow";
-        document.getElementById("followButtonProfile2").innerHTML = "Unfollow";
+        document.getElementById("followButtonProfile").innerHTML = "Remove"; 
+        document.getElementById("followButtonProfile2").innerHTML = "Remove";
         document.getElementById("followButtonProfile").onclick = function() { unfollowUser(id); };
-        document.getElementById("followButtonProfile2").onclick = function() { unfollowUser(id); };
     } else {
-        document.getElementById("followButtonProfile").innerHTML = "Follow";
-        document.getElementById("followButtonProfile2").innerHTML = "Follow";
+        document.getElementById("followButtonProfile").innerHTML = "Add to Circle";
+        document.getElementById("followButtonProfile2").innerHTML = "Add to Circle";
         document.getElementById("followButtonProfile").onclick = function() { followUser(uname); };
-        document.getElementById("followButtonProfile2").onclick = function() { followUser(uname); };
     }
     
     if (uname == "Noah" || uname == "1") uname = uname + ' <i class="fa-solid fa-circle-check"></i>';

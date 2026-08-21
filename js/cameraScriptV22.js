@@ -19,7 +19,7 @@ var fadeTimeout = 0;
 
 var isShown = true;
 
-function unfade() {
+function unfade() { 
     fading = true;
     var op = 0.1;  // initial opacity
     document.getElementById("footer").style.display = 'block';
