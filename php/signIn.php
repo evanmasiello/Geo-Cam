@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["uname"]) and isset($_
         
         if ($userIsLegit) {
         
-            $session = hash("sha256", "session" . $uname . $_POST["pass"] . $time, false);
+            $session = bin2hex(random_bytes(32));
             
             $nameSesh = "sessions";
             $file_nameSesh = $nameSesh . '.json';
@@ -55,11 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["uname"]) and isset($_
                 
                 $jsonArraySesh = json_decode($jsonDataSesh);
                 
+                $keptSesh = [];
                 for ($x=0; $x < count($jsonArraySesh); $x++) {
-                    if ($jsonArraySesh[$x]->userId == $userID) unset($jsonArraySesh[$x]);
+                    if ($jsonArraySesh[$x]->userId != $userID) array_push($keptSesh, $jsonArraySesh[$x]);
                 }
                 
-                $jsonArraySesh = array_values($jsonArraySesh);
+                $jsonArraySesh = $keptSesh;
                 
                 $newSet = Array (
                     "key" => hash("sha256", $session, false),
