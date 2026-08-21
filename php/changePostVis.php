@@ -74,20 +74,26 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["v
                         
                         $savePostId;
                         
-                        for ($x=0; $x < count($posts); $x++) {
-                            if ($posts[$x]->id == $postId) { 
-                                if ($_POST["vis"] == "following") {
-                                    $posts[$x]->visibility = "following";
-                                    $visVar = "following";
-                                } elseif ($_POST["vis"] == "all-local") {
-                                    $posts[$x]->visibility = "all-local";
-                                    $visVar = "all-local";
+                        $postFound = false;
+                        for ($x=0; $x < count($posts) && !$postFound; $x++) {
+                            if ($posts[$x]->id == $postId) {
+                                $postFound = true;
+                                if ($posts[$x]->user != $uID) {
+                                    $response = "notYourPost";
                                 } else {
-                                    $posts[$x]->visibility = "all";
-                                    $visVar = "all";
+                                    if ($_POST["vis"] == "following") {
+                                        $posts[$x]->visibility = "following";
+                                        $visVar = "following";
+                                    } elseif ($_POST["vis"] == "all-local") {
+                                        $posts[$x]->visibility = "all-local";
+                                        $visVar = "all-local";
+                                    } else {
+                                        $posts[$x]->visibility = "all";
+                                        $visVar = "all";
+                                    }
+                                    $changeValid = true;
+                                    $savePostId = $posts[$x]->id;
                                 }
-                                $changeValid = true;
-                                $savePostId = $posts[$x]->id;
                             }
                         }
                         

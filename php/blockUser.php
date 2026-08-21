@@ -109,7 +109,9 @@ if(isset($_POST["name"]) and isset($_POST["session"]) and file_exists("sessions.
     
     if ($validSession) {
         
-        array_push($userBlocked, intval($FollowId));
+        if ($shouldPush) {
+            array_push($userBlocked, intval($FollowId));
+        }
         
         $users[$userIDStore]->blocked = json_encode($userBlocked);
         

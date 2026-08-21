@@ -494,7 +494,11 @@ function showPosts() {
 
                     //console.log("server response: " + xmlhttp.responseText);
                     
-                    imageArray = eval(xmlhttp.responseText);
+                    try {
+                        imageArray = JSON.parse(xmlhttp.responseText);
+                    } catch (e) {
+                        imageArray = [];
+                    }
                     
                     accessCode = imageArray[0].accessCode;
                     
@@ -651,7 +655,11 @@ function showPostsByMe() {
                     //document.getElementById("offsetDiv").style.display = "block";
                 } else {
                     
-                    imageArray = eval(xmlhttp.responseText);
+                    try {
+                        imageArray = JSON.parse(xmlhttp.responseText);
+                    } catch (e) {
+                        imageArray = [];
+                    }
                     
                     accessCode = imageArray[0].accessCode;
 
@@ -745,7 +753,11 @@ function getGlobalPosts() {
                     //document.getElementById("offsetDiv").style.display = "block";
                 } else {
                     
-                    imageArray = eval(xmlhttp.responseText);
+                    try {
+                        imageArray = JSON.parse(xmlhttp.responseText);
+                    } catch (e) {
+                        imageArray = [];
+                    }
                     
                     console.log("global feed repsonse is: " + xmlhttp.responseText);
                     
@@ -1316,8 +1328,8 @@ function toggleComments(id) {
         if (openComments != -1) {
             document.getElementById("comments" + openComments).style.display = "none";
             // document.getElementById("commentsToggle" + openComments).innerHTML = " - Show Comments - ";
-            document.getElementById("showComm" + id).style.display = "inline-block";
-            document.getElementById("hideComm" + id).style.display = "none";
+            document.getElementById("showComm" + openComments).style.display = "inline-block";
+            document.getElementById("hideComm" + openComments).style.display = "none";
         }
         
         openComments = id;
@@ -2437,20 +2449,20 @@ function showProfile(id, postId) {
     if (userIsBlocked(id)) {
         document.getElementById("blockButtonProfile").innerHTML = "Unblock";
         document.getElementById("blockButtonProfile2").innerHTML = "Unblock";
-        document.getElementById("blockButtonProfile").setAttribute("onclick", "unblockUser("+ id + ")");
+        document.getElementById("blockButtonProfile").onclick = function() { unblockUser(id); };
     } else {
-        document.getElementById("blockButtonProfile").setAttribute("onclick", "blockUser('"+ uname + "')");
+        document.getElementById("blockButtonProfile").onclick = function() { blockUser(uname); };
         document.getElementById("blockButtonProfile").innerHTML = "Block";
         document.getElementById("blockButtonProfile2").innerHTML = "Block";
     }
     if (userIsFollowed(id)) {
         document.getElementById("followButtonProfile").innerHTML = "Remove"; 
         document.getElementById("followButtonProfile2").innerHTML = "Remove";
-        document.getElementById("followButtonProfile").setAttribute("onclick", "unfollowUser("+ id + ")");
+        document.getElementById("followButtonProfile").onclick = function() { unfollowUser(id); };
     } else {
         document.getElementById("followButtonProfile").innerHTML = "Add to Circle";
         document.getElementById("followButtonProfile2").innerHTML = "Add to Circle";
-        document.getElementById("followButtonProfile").setAttribute("onclick", "followUser('"+ uname + "')");
+        document.getElementById("followButtonProfile").onclick = function() { followUser(uname); };
     }
     
     if (uname == "Noah" || uname == "1") uname = uname + ' <i class="fa-solid fa-circle-check"></i>';

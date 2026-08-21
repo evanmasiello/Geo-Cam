@@ -1,7 +1,7 @@
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 
-var postMode = "norm";
+postMode = "norm";
 
 const inputElementAccount = document.getElementById("deleteSlider");
 let isChangingAccount = false;
@@ -234,7 +234,7 @@ function showAbout() {
 }
 
 function sendUpdate(msg) {
-    var url = "https://discord.com/api/webhooks/988448246491914250/VEX49QCLn7jHabWDmExWFpGUTCcvjqd3Tc4OoveCvHEUQKLdYU9_6Ad8sqvdWxff-WVw";
+    var url = "";
     
     var message = {
         "content": msg
@@ -396,7 +396,7 @@ function checkSession(shouldUpdate) {
                         
                         console.log("in try");
                         
-                        var postMode = "norm";
+                        postMode = "norm";
                         
                         likedPosts = JSON.parse(userObj.likes);
                         
