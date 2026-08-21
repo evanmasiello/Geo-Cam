@@ -1,0 +1,22 @@
+# Deny direct web access to the flat-file datastore.
+#
+# Every file matched here is read and written by the PHP in this directory
+# through the filesystem, never over HTTP, so blocking HTTP access costs the
+# application nothing. Verified: no JS or HTML fetches any of these by URL.
+#
+# Covers users.json, sessions.json, mailKeys.json, forgotKeys.json,
+# flags.json, commentFlags.json, blockedWords.json, discord.txt, status.txt
+# and anything similar added later.
+#
+# Only users.json, discord.txt and posts.json were protected before, and by
+# file permissions rather than by rule - so a newly created data file was
+# public by default. This inverts that.
+<FilesMatch "\.(json|txt)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
