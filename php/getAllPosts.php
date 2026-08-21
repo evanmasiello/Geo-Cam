@@ -1,4 +1,7 @@
 <?php
+header("Access-Control-Allow-Origin: https://geocam.app");
+header("Access-Control-Allow-Credentials: true");
+
 
 if (false) {
 //if (false) {

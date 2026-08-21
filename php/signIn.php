@@ -1,4 +1,7 @@
 <?php
+header("Access-Control-Allow-Origin: https://geocam.app");
+header("Access-Control-Allow-Credentials: true");
+
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["uname"]) and isset($_POST["pass"]) and (strlen($_POST["uname"]) > 0) and (strlen($_POST["pass"]) > 0)) {
     

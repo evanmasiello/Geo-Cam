@@ -1,4 +1,7 @@
 <?php
+header("Access-Control-Allow-Origin: https://geocam.app");
+header("Access-Control-Allow-Credentials: true");
+
 
 // check if file is able to be written to
 // if yes then set no and proceed
