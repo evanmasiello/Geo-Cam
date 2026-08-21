@@ -41,25 +41,32 @@ jobs:
           # branches and thousands of post images -- none of which are in the
           # repo or deployed. Mirroring them wastes hours and pulls old
           # credentials onto the runner.
-          exclude="--exclude ^(posts|logs|shop|downloads|testBranches)/"
+          #
+          # Patterns are quoted for LFTP, not just the shell: lftp parses "|"
+          # as a pipe, so an unquoted alternation is cut at the first branch.
+          # The script is built into a file rather than a heredoc so the
+          # quoting is visible and stays intact.
+          {
+            echo "set ftp:ssl-force true"
+            echo "set ftp:ssl-protect-data true"
+            echo "set ssl:verify-certificate true"
+            echo "set net:max-retries 3"
+            echo "set cmd:fail-exit true"
+            printf 'mirror --verbose --parallel=4'
+            printf " --exclude '^(posts|logs|shop|downloads|testBranches)/'"
+            if [ "$INCLUDE_IMAGES" != "true" ]; then
+              printf " --exclude-glob '*.png' --exclude-glob '*.jpg' --exclude-glob '*.gif'"
+            fi
+            printf ' "%s" snapshot/\n' "$REMOTE_DIR"
+            echo "bye"
+          } > mirror.lftp
 
-          # Post images are the bulk of the site and are never deployed.
-          if [ "$INCLUDE_IMAGES" != "true" ]; then
-            exclude="$exclude --exclude-glob *.png --exclude-glob *.jpg --exclude-glob *.gif"
-          fi
+          echo "--- lftp script ---"; cat mirror.lftp; echo "-------------------"
 
           # Explicit FTPS on port 21 with full certificate verification,
           # matching the deploy job. Password comes from the environment so
           # it never appears in the process list.
-          lftp -u "$FTP_USERNAME" --env-password "ftp://$FTP_SERVER" <<EOF
-          set ftp:ssl-force true
-          set ftp:ssl-protect-data true
-          set ssl:verify-certificate true
-          set net:max-retries 3
-          set cmd:fail-exit true
-          mirror --verbose --parallel=4 $exclude "$REMOTE_DIR" snapshot/
-          bye
-          EOF
+          lftp -u "$FTP_USERNAME" --env-password "ftp://$FTP_SERVER" -f mirror.lftp
 
           echo "--- snapshot tree ---"
           find snapshot -type f | sort | head -100
