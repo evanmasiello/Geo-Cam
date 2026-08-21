@@ -118,6 +118,28 @@ Two usual causes:
 - **Whitespace in a secret.** A trailing space or newline pasted into GitHub is
   invisible in the UI and fatal at login. Re-paste it.
 
+## Empty FTP home / cannot change directory (curl exit 9)
+
+`curl: (9) Server denied you to change to the given directory` means login
+succeeded but the path was refused — credentials are fine, `FTP_REMOTE_DIR` is
+not.
+
+cPanel FTP accounts are **jailed** to their configured directory: after login
+that directory *is* `/`. If the *Directory* field was left at its default when
+the account was created, cPanel creates a new empty folder named after the
+account (e.g. `public_html/deploy`) and locks the account into it. The
+`Verify FTP credentials` step shows this as a home containing nothing but
+`.ftpquota`.
+
+Fix it in cPanel → *FTP Accounts* → *Actions* → *Change Directory*, pointing
+the account at the app folder (e.g. `public_html/geocam`, relative to home, no
+leading slash). Because the account remains jailed there, set
+`FTP_REMOTE_DIR` to `/`.
+
+Using the main cPanel account instead gives full home access and a
+`FTP_REMOTE_DIR` of `/public_html/<folder>/`, but hands the pipeline your
+primary hosting credentials. Prefer the scoped account.
+
 ## Backups
 
 The `backup` job runs before every deploy. It pulls the live JSON store down

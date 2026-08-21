@@ -75,15 +75,40 @@ jobs:
             *)   echo "::warning::FTP_USERNAME has no '@'. Bluehost FTP accounts are usually 'user@yourdomain.com' -- copy the full name from cPanel > FTP Accounts" ;;
           esac
 
-          echo "--- attempting login, listing FTP home ---"
-          if curl --ssl-reqd --fail --silent --show-error --list-only \
-                  --user "$FTP_USERNAME:$FTP_PASSWORD" "ftp://$FTP_SERVER/"; then
-            echo "--- login OK. Listing $REMOTE_DIR ---"
-            curl --ssl-reqd --fail --silent --show-error --list-only \
-                 --user "$FTP_USERNAME:$FTP_PASSWORD" "ftp://$FTP_SERVER${REMOTE_DIR}" \
-              || echo "::error::Login works but FTP_REMOTE_DIR is wrong. Pick the right folder from the home listing above."
-          else
+          # Detailed LIST (not NLST) so directories are distinguishable.
+          ls_dir() {
+            curl --ssl-reqd --fail --silent --show-error \
+                 --user "$FTP_USERNAME:$FTP_PASSWORD" "ftp://$FTP_SERVER$1"
+          }
+
+          echo "--- attempting login, listing FTP home (/) ---"
+          if ! home="$(ls_dir /)"; then
             echo "::error::Login rejected (530). Check FTP_USERNAME and FTP_PASSWORD in cPanel > FTP Accounts."
+            exit 0
+          fi
+          echo "$home"
+
+          # Walk one level down so the real folder names are visible.
+          subdirs="$(printf '%s\n' "$home" | awk '/^d/ && $NF !~ /^\.\.?$/ {print $NF}')"
+          if [ -z "$subdirs" ]; then
+            echo "::warning::FTP home is empty. The cPanel FTP account is probably jailed to a new, empty folder named after the account. Repoint it via FTP Accounts > Change Directory, then set FTP_REMOTE_DIR to /"
+          else
+            for d in $subdirs; do
+              echo "--- /$d ---"
+              ls_dir "/$d/" | awk '{print $NF}' | paste -sd' ' - || true
+            done
+          fi
+
+          echo "--- listing configured FTP_REMOTE_DIR ---"
+          if target="$(ls_dir "${REMOTE_DIR}")"; then
+            printf '%s\n' "$target" | awk '{print $NF}' | paste -sd' ' -
+            if printf '%s\n' "$target" | awk '{print $NF}' | grep -qx 'php'; then
+              echo "FTP_REMOTE_DIR looks correct (contains php/)"
+            else
+              echo "::warning::FTP_REMOTE_DIR is reachable but has no php/ directory -- likely not the web root"
+            fi
+          else
+            echo "::error::FTP_REMOTE_DIR is not reachable. Pick the correct folder from the listings above; if the home itself is the app folder, use /"
           fi
 
       - name: Download live data files
