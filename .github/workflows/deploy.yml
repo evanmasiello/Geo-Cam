@@ -47,6 +47,45 @@ jobs:
             | openssl x509 -noout -subject -issuer -ext subjectAltName \
             || echo "could not read certificate"
 
+      # A 530 means the credentials were rejected outright. The two usual
+      # causes on Bluehost are a short username (cPanel FTP accounts are named
+      # "user@yourdomain.com", not "user") and stray whitespace pasted into a
+      # secret. This distinguishes them without printing any secret value.
+      - name: Verify FTP credentials
+        continue-on-error: true
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
+        run: |
+          trim() { printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+
+          for name in FTP_SERVER FTP_USERNAME FTP_PASSWORD REMOTE_DIR; do
+            eval "val=\$$name"
+            if [ "$val" != "$(trim "$val")" ]; then
+              echo "::error::$name has leading or trailing whitespace -- re-paste the secret"
+            else
+              echo "$name: no stray whitespace"
+            fi
+          done
+
+          case "$FTP_USERNAME" in
+            *@*) echo "FTP_USERNAME: contains '@' (expected cPanel form)" ;;
+            *)   echo "::warning::FTP_USERNAME has no '@'. Bluehost FTP accounts are usually 'user@yourdomain.com' -- copy the full name from cPanel > FTP Accounts" ;;
+          esac
+
+          echo "--- attempting login, listing FTP home ---"
+          if curl --ssl-reqd --fail --silent --show-error --list-only \
+                  --user "$FTP_USERNAME:$FTP_PASSWORD" "ftp://$FTP_SERVER/"; then
+            echo "--- login OK. Listing $REMOTE_DIR ---"
+            curl --ssl-reqd --fail --silent --show-error --list-only \
+                 --user "$FTP_USERNAME:$FTP_PASSWORD" "ftp://$FTP_SERVER${REMOTE_DIR}" \
+              || echo "::error::Login works but FTP_REMOTE_DIR is wrong. Pick the right folder from the home listing above."
+          else
+            echo "::error::Login rejected (530). Check FTP_USERNAME and FTP_PASSWORD in cPanel > FTP Accounts."
+          fi
+
       - name: Download live data files
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}

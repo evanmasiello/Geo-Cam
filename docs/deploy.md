@@ -98,6 +98,26 @@ longer authenticated, so the credentials become vulnerable to an active
 man-in-the-middle. Note the deploy step already runs this way — the action's
 `security` input defaults to `loose`.
 
+## Login rejected (530 / curl exit 67)
+
+`530` is an authentication failure, not a permissions problem — the server
+rejects the credentials before any path is considered. File permission errors
+are `550`/`553` and name the file. If TLS succeeded and this is what you get,
+the certificate and hostname are fine and only the credentials are wrong.
+
+The `Verify FTP credentials` step reports whether any secret carries stray
+whitespace, whether the username has the expected `@`, and — once login
+works — lists the FTP home directory so the correct `FTP_REMOTE_DIR` is
+visible.
+
+Two usual causes:
+
+- **Username too short.** cPanel lists the login as `deploy`, but the real FTP
+  username is `deploy@yourdomain.com`. Copy the full string from
+  *FTP Accounts*.
+- **Whitespace in a secret.** A trailing space or newline pasted into GitHub is
+  invisible in the UI and fatal at login. Re-paste it.
+
 ## Backups
 
 The `backup` job runs before every deploy. It pulls the live JSON store down
