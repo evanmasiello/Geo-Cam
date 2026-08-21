@@ -67,7 +67,7 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
                 $users[$i]->pass = $newPass;
                 
                 $time = strval(round(microtime(true)));
-                $sessionNew = hash("sha256", "session" . $users[$i]->user . $_POST["passNew"] . $time, false);
+                $sessionNew = bin2hex(random_bytes(32));
                 
                 $keptSessions = [];
                 for ($r=0; $r < count($sessions); $r++) {

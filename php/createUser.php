@@ -194,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["uname"]) and isset($_
         $jsonUsers = json_encode($jsonArrayUsers);
         $jsonMail = json_encode($jsonArrayMail);
         
-        $session = hash("sha256", "session" . $uname . $_POST["pass"] . $time, false);
+        $session = bin2hex(random_bytes(32));
             
         $nameSesh = "sessions";
         $file_nameSesh = $nameSesh . '.json';
