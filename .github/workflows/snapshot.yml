@@ -31,7 +31,7 @@ jobs:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
+          REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR || vars.FTP_REMOTE_DIR }}
           INCLUDE_IMAGES: ${{ inputs.include_images }}
         run: |
           set -euo pipefail

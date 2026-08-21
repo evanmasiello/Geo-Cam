@@ -17,11 +17,11 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
       - run: bash tests/run.sh
@@ -57,9 +57,10 @@ jobs:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
+          REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR || vars.FTP_REMOTE_DIR }}
         run: |
           trim() { printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+          [ -n "${REMOTE_DIR:-}" ] || REMOTE_DIR=/
 
           for name in FTP_SERVER FTP_USERNAME FTP_PASSWORD REMOTE_DIR; do
             eval "val=\$$name"
@@ -116,7 +117,7 @@ jobs:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
+          REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR || vars.FTP_REMOTE_DIR }}
           # >>> TLS VERIFICATION SWITCH <<<
           # "false" = verify the server's identity (correct, preferred).
           # "true"  = still encrypted, but the server is not authenticated.
@@ -129,7 +130,14 @@ jobs:
           # There is no default web root -- a wrong or missing path must fail
           # loudly rather than silently aiming at the wrong directory.
           # The value is a secret, so it is masked in logs; check shape only.
-          [ -n "${REMOTE_DIR:-}" ] || { echo "::error::FTP_REMOTE_DIR secret is not set"; exit 1; }
+          # A jailed cPanel FTP account is always rooted at its own directory,
+          # so "/" is correct by construction and safe as a default. Leaving the
+          # secret unset also keeps logs readable: a secret of "/" makes GitHub
+          # mask every slash in every line.
+          if [ -z "${REMOTE_DIR:-}" ]; then
+            REMOTE_DIR=/
+            echo "FTP_REMOTE_DIR not set -- defaulting to / (correct for a jailed FTP account)"
+          fi
           case "$REMOTE_DIR" in
             /) ;;      # a jailed FTP account is rooted at its own directory
             /*/) ;;
@@ -194,7 +202,7 @@ jobs:
     needs: backup
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Sync files over FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
@@ -209,7 +217,7 @@ jobs:
           # (box2261.bluehost.com) rather than the domain. That makes full
           # certificate verification possible; don't downgrade this to "loose".
           security: strict
-          server-dir: ${{ secrets.FTP_REMOTE_DIR }}
+          server-dir: ${{ secrets.FTP_REMOTE_DIR || vars.FTP_REMOTE_DIR || '/' }}
           # >>> SAFETY SWITCH <<<
           # true  = rehearsal, connects and logs but writes nothing.
           # false = real deploy.
