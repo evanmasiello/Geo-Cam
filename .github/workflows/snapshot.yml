@@ -5,15 +5,6 @@ name: Snapshot live site
 # what is actually running on the server.
 on:
   workflow_dispatch:
-    inputs:
-      include_images:
-        description: 'Also download posts/*.png (slow, large)'
-        type: boolean
-        default: false
-      open_pr:
-        description: 'Commit the live code to a branch and open a PR against main'
-        type: boolean
-        default: true
 
 permissions:
   contents: write
@@ -26,54 +17,57 @@ jobs:
       - name: Install lftp
         run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
 
-      - name: Mirror the live site
+      - name: Mirror the app code
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR || vars.FTP_REMOTE_DIR }}
-          INCLUDE_IMAGES: ${{ inputs.include_images }}
         run: |
           set -euo pipefail
+          [ -n "${REMOTE_DIR:-}" ] || REMOTE_DIR=/
           mkdir -p snapshot
 
-          # The app folder also contains a WordPress install, old test
-          # branches and thousands of post images -- none of which are in the
-          # repo or deployed. Mirroring them wastes hours and pulls old
-          # credentials onto the runner.
-          #
-          # Patterns are quoted for LFTP, not just the shell: lftp parses "|"
-          # as a pipe, so an unquoted alternation is cut at the first branch.
-          # The script is built into a file rather than a heredoc so the
-          # quoting is visible and stays intact.
+          # ALLOWLIST, not a denylist. The FTP root also holds a WordPress
+          # install, old branches and thousands of post images. Excluding them
+          # by pattern once produced a 7.9 GB artifact when a pattern silently
+          # failed to match; naming the wanted directories instead means the
+          # worst case is a missing folder, not a runaway download.
           {
             echo "set ftp:ssl-force true"
             echo "set ftp:ssl-protect-data true"
             echo "set ssl:verify-certificate true"
             echo "set net:max-retries 3"
             echo "set cmd:fail-exit true"
-            printf 'mirror --verbose --parallel=4'
-            printf " --exclude '^(posts|logs|shop|downloads|testBranches)/'"
-            if [ "$INCLUDE_IMAGES" != "true" ]; then
-              printf " --exclude-glob '*.png' --exclude-glob '*.jpg' --exclude-glob '*.gif'"
-            fi
-            printf ' "%s" snapshot/\n' "$REMOTE_DIR"
+            # Root: files only, no descent into shop/, posts/, testBranches/.
+            printf 'mirror --verbose --no-recursion "%s" snapshot/\n' "$REMOTE_DIR"
+            for d in php js css assets; do
+              printf 'mirror --verbose "%s%s" "snapshot/%s"\n' "$REMOTE_DIR" "$d" "$d"
+            done
             echo "bye"
           } > mirror.lftp
 
           echo "--- lftp script ---"; cat mirror.lftp; echo "-------------------"
 
-          # Explicit FTPS on port 21 with full certificate verification,
-          # matching the deploy job. Password comes from the environment so
-          # it never appears in the process list.
           # -e and -u must precede the host: "lftp -f" takes a script INSTEAD
           # of a host, so combining the two makes lftp hand "-f" to open.
           lftp -u "$FTP_USERNAME" --env-password \
                -e "source mirror.lftp" "ftp://$FTP_SERVER"
 
-          echo "--- snapshot tree ---"
-          find snapshot -type f | sort | head -100
-          echo "--- total: $(find snapshot -type f | wc -l) files ---"
+      - name: Refuse an implausibly large snapshot
+        run: |
+          set -euo pipefail
+          size_mb=$(du -sm snapshot | cut -f1)
+          files=$(find snapshot -type f | wc -l)
+          echo "snapshot: ${size_mb} MB across ${files} files"
+          # The app is a few hundred KB of code. Anything near this ceiling
+          # means a mirror walked somewhere it should not have.
+          if [ "$size_mb" -gt 100 ]; then
+            echo "::error::Snapshot is ${size_mb} MB -- expected a few MB of code. Refusing to continue."
+            exit 1
+          fi
+          echo "--- tree ---"
+          find snapshot -type f | sort
 
       - name: Separate code from live data
         run: |
@@ -86,7 +80,7 @@ jobs:
                    --exclude='flags.json' --exclude='commentFlags.json' \
                    --exclude='discord.txt' --exclude='accessCode.txt' \
                    --exclude='status.txt' --exclude='.ftpquota' \
-                   --exclude='logs/' \
+                   --exclude='error_log' --exclude='logs/' \
                    snapshot/ code/
           echo "code files: $(find code -type f | wc -l)"
 
@@ -101,7 +95,6 @@ jobs:
       # is the thing that needs reviewing. Git cannot merge this itself: the
       # live edits have no common ancestor in history.
       - name: Open a reconciliation PR
-        if: ${{ inputs.open_pr }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -115,11 +108,9 @@ jobs:
 
           # Overlay only. No --delete: repo-only paths (tests/, docs/,
           # .github/) are not on the server and must survive.
-          rsync -a --exclude='posts/' --exclude='logs/' \
-                   --exclude='shop/' --exclude='downloads/' \
-                   --exclude='testBranches/' ../code/ ./
+          rsync -a ../code/ ./
 
-          if git diff --quiet && git diff --cached --quiet && [ -z "$(git status --porcelain)" ]; then
+          if [ -z "$(git status --porcelain)" ]; then
             echo "Live site matches the repo -- nothing to reconcile."
             exit 0
           fi
