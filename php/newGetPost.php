@@ -1,6 +1,6 @@
 <?php
 
-if(isset($_POST["lat"]) and isset($_POST["long"])){
+if(is_numeric($_POST["lat"] ?? null) and is_numeric($_POST["long"] ?? null)){
 //if (false) {
 
 $latPost = $_POST["lat"];

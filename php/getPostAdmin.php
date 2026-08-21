@@ -1,6 +1,6 @@
 <?php
 
-if(isset($_POST["lat"]) and isset($_POST["long"]) and isset($_POST["session"]) and file_exists("sessions.json")){
+if(is_numeric($_POST["lat"] ?? null) and is_numeric($_POST["long"] ?? null) and isset($_POST["session"]) and file_exists("sessions.json")){
 //if (false) {
 
     $session = $_POST["session"];
