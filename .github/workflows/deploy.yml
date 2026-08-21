@@ -131,8 +131,9 @@ jobs:
           # The value is a secret, so it is masked in logs; check shape only.
           [ -n "${REMOTE_DIR:-}" ] || { echo "::error::FTP_REMOTE_DIR secret is not set"; exit 1; }
           case "$REMOTE_DIR" in
+            /) ;;      # a jailed FTP account is rooted at its own directory
             /*/) ;;
-            *) echo "::error::FTP_REMOTE_DIR must start and end with '/' (e.g. /public_html/geocam/)"; exit 1 ;;
+            *) echo "::error::FTP_REMOTE_DIR must start and end with '/' (use / for a jailed FTP account)"; exit 1 ;;
           esac
 
           mkdir -p backup/php backup/posts
