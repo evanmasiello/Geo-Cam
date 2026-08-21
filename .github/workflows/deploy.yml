@@ -204,6 +204,15 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # Rewrite js/css references to carry a content hash. Done here, against
+      # the ephemeral checkout, so the repo keeps clean filenames while the
+      # browser still sees a new URL whenever a file's bytes change. Replaces
+      # the old scheme of renaming files (indexScriptV79 -> V80), which left
+      # every superseded version on the server forever.
+      # Exits non-zero if a page references an asset that is not there.
+      - name: Stamp assets with a content hash
+        run: python3 scripts/stamp-assets.py
+
       - name: Sync files over FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
@@ -236,6 +245,7 @@ jobs:
             README.md
             tests/**
             docs/**
+            scripts/**
             php/users.json
             php/sessions.json
             php/mailKeys.json

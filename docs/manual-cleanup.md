@@ -150,3 +150,17 @@ cPanel created these when FTP accounts were made with the default directory:
 - `shop/` is a WordPress install inside the app folder. Unrelated to Geo-Cam,
   but unpatched WordPress plugins are the most common way shared hosting gets
   compromised. Decide whether you still want it.
+
+---
+
+## 9. After the cache-busting change deploys
+
+Renaming to stable filenames leaves one final set of orphans on the server —
+the last of them, since filenames stop changing after this:
+
+- `js/indexScriptV80.js`, `js/sharedScriptV22.js`, `js/cameraScriptV22.js`
+- `css/styleV85.css`, `css/styleV53.css`
+
+Delete them only **after** confirming the site works on the new
+`indexScript.js` / `sharedScript.js` / `cameraScript.js` / `style.css` /
+`styleDashboard.css` files, so there is something to fall back to.
