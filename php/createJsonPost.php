@@ -3,6 +3,17 @@ header("Access-Control-Allow-Origin: https://geocam.app");
 header("Access-Control-Allow-Credentials: true");
 
 
+function shutdown()
+{
+    global $weOpened, $statusFile;
+    if ($weOpened) file_put_contents($statusFile, "CLOSED");
+}
+
+$weOpened = false;
+
+register_shutdown_function('shutdown');
+
+
 // check if file is able to be written to
 // if yes then set no and proceed
 // if not wait
@@ -19,6 +30,8 @@ if(isset($_POST["image"]) and isset($_POST["lat"]) and isset($_POST["long"]) and
     }
     
     file_put_contents($statusFile, "OPEN");
+    
+    $weOpened = true;
     
     try {
     

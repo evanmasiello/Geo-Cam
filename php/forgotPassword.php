@@ -5,10 +5,13 @@ header("Access-Control-Allow-Credentials: true");
 
 function shutdown()
 {
+    global $weOpened, $statusFile;
     if ($weOpened) file_put_contents($statusFile, "CLOSED");
 }
 
 $weOpened = false;
+
+register_shutdown_function('shutdown');
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["email"]) and (strlen($_POST["email"]) > 0)) {
     
@@ -16,9 +19,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["email"]) and (strlen(
     
     $dataStatus = file_get_contents($statusFile);
     
+    $lockWaitStart = time();
     while ($dataStatus == "OPEN") {
+        // The holder died without releasing: normal hold time is
+        // milliseconds, so treat a lock this old as stale and proceed.
+        if (time() - $lockWaitStart >= 10) break;
         sleep(2);
+        $dataStatus = file_get_contents($statusFile);
     }
+    
+    // Actually take the lock. This script writes forgotKeys.json, and
+    // previously only ever released a lock it never held, freeing a lock
+    // another writer was holding and letting the two interleave.
+    file_put_contents($statusFile, "OPEN");
+    
+    $weOpened = true;
         
         $nameUsers = "users";
         $file_nameUsers = $nameUsers . '.json';

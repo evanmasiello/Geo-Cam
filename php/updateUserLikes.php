@@ -3,15 +3,33 @@ header("Access-Control-Allow-Origin: https://geocam.app");
 header("Access-Control-Allow-Credentials: true");
 
 
+function shutdown()
+{
+    global $weOpened, $statusFile;
+    if ($weOpened) file_put_contents($statusFile, "CLOSED");
+}
+
+$weOpened = false;
+
+register_shutdown_function('shutdown');
+
+
 $statusFile = "status.txt";
     
 $dataStatus = file_get_contents($statusFile);
     
+$lockWaitStart = time();
 while ($dataStatus == "OPEN") {
+    // The holder died without releasing: normal hold time is
+    // milliseconds, so treat a lock this old as stale and proceed.
+    if (time() - $lockWaitStart >= 10) break;
     sleep(2);
+    $dataStatus = file_get_contents($statusFile);
 }
     
 file_put_contents($statusFile, "OPEN");
+
+$weOpened = true;
 
 $filename = "users.json";
 
