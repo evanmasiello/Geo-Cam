@@ -1,0 +1,53 @@
+name: One-time clear status lock
+
+# Temporary: clears a stale "OPEN" value in the live php/status.txt over FTPS.
+# Triggered by the commit that adds this file. Removed immediately afterwards.
+on:
+  push:
+    paths:
+      - .github/workflows/clear-status-lock-oneoff.yml
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  clear:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set php/status.txt to CLOSED and verify
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR || vars.FTP_REMOTE_DIR || '/' }}
+          TLS_INSECURE: "false"
+        run: |
+          set -euo pipefail
+
+          case "$REMOTE_DIR" in
+            /) ;;
+            /*/) ;;
+            *) echo "::error::FTP_REMOTE_DIR must start and end with '/'"; exit 1 ;;
+          esac
+
+          tls_opts="--ssl-reqd"
+          if [ "$TLS_INSECURE" = "true" ]; then
+            echo "::warning::TLS verification disabled"
+            tls_opts="--ssl-reqd --insecure"
+          fi
+
+          url="ftp://$FTP_SERVER${REMOTE_DIR}php/status.txt"
+          printf 'CLOSED' | curl $tls_opts --fail --silent --show-error \
+            --user "$FTP_USERNAME:$FTP_PASSWORD" \
+            --upload-file - "$url"
+
+          tmp="$(mktemp)"
+          curl $tls_opts --fail --silent --show-error \
+            --user "$FTP_USERNAME:$FTP_PASSWORD" \
+            "$url" -o "$tmp"
+
+          value="$(cat "$tmp")"
+          echo "status.txt now: $value"
+          [ "$value" = "CLOSED" ]
