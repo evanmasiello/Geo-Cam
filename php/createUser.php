@@ -48,7 +48,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["uname"]) and isset($_
     
         $dataStatus = file_get_contents($statusFile);
     
+        $lockWaitStart = time();
         while ($dataStatus == "OPEN") {
+            // The holder died without releasing: normal hold time is
+            // milliseconds, so treat a lock this old as stale and proceed.
+            if (time() - $lockWaitStart >= 10) break;
             sleep(1);
             $dataStatus = file_get_contents($statusFile);
         }

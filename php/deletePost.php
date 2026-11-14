@@ -21,7 +21,11 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
         
         $dataStatus = file_get_contents($statusFile);
         
+        $lockWaitStart = time();
         while ($dataStatus == "OPEN") {
+            // The holder died without releasing: normal hold time is
+            // milliseconds, so treat a lock this old as stale and proceed.
+            if (time() - $lockWaitStart >= 10) break;
             sleep(1);
             $dataStatus = file_get_contents($statusFile);
         }
