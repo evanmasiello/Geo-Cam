@@ -41,7 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["email"]) and (strlen(
         $locationUsers = $file_nameUsers;
         
         //$uname = htmlspecialchars($_POST['uname']);
-        $email = $_POST['email'];
+        $email = trim($_POST['email']);
+
+        if (preg_match('/[\r\n]/', $email)) $email = "";
         
         $time = strval(round(microtime(true)));
         
@@ -113,11 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["email"]) and (strlen(
                 
                 for ($i=0; $i < count($jsonArrayMail); $i++) {
                     
-                    error_log("maill ID " . $jsonArrayMail[$i]->userId);
-                    error_log("user ID " . $userID);
                     
                     if ($jsonArrayMail[$i]->userId == $userID) {
-                        error_log("in equals");
                         unset($jsonArrayMail[$i]);
                     }
                 }

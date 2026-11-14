@@ -14,6 +14,7 @@ $postData = file_get_contents("../posts/posts.json");
 //echo $postData;
 
 $posts = json_decode($postData);
+if (!is_array($posts)) $posts = [];
 $finalPosts = array();
 
 $postCount = 0;
@@ -23,6 +24,24 @@ $postUsers = array();
 //foreach ($posts as $post) {
 
 $users = json_decode(file_get_contents("users.json"));
+if (!is_array($users)) $users = [];
+
+$viewerId = null;
+
+if (isset($_POST["session"]) and file_exists("sessions.json")) {
+    $sessions = json_decode(file_get_contents("sessions.json"));
+    $sessionHash = hash("sha256", $_POST["session"], false);
+
+    for ($r = 0; $r < count($sessions); $r++) {
+        if ($sessionHash == $sessions[$r]->key && (time() - intval($sessions[$r]->time)) < 7776000) {
+            $viewerId = $sessions[$r]->userId;
+        }
+    }
+}
+
+$posts = array_values(array_filter($posts, function ($post) use ($viewerId, $users) {
+    return postVisible($post, $viewerId, $users);
+}));
 
 for ($i = count($posts) - 1; $i >= 0; $i--) {
     //if (distance($_POST["lat"], $_POST["long"], $post->lat, $post->long) > 1) {
@@ -73,10 +92,11 @@ for ($i = count($posts) - 1; $i >= 0; $i--) {
         if ($posts[$i]->comments != null) {
             
             $postCommArr = json_decode($posts[$i]->comments);
+            $visibleComments = [];
             
             for ($v=0; $v < count($postCommArr); $v++) {
                 
-                $notFound = true;
+                if (!empty($postCommArr[$v]->hidden)) continue;
                 
                 for ($b=0; $b < count($users); $b++) {
                     if ($postCommArr[$v]->user == $users[$b]->id) {
@@ -84,14 +104,13 @@ for ($i = count($posts) - 1; $i >= 0; $i--) {
                     }
                 }
                 
-                if ($postCommArr[$v]->hidden != true) {
-                    $commentCount++;
-                }
+                $visibleComments[] = $postCommArr[$v];
+                $commentCount++;
             }
             
             $posts[$i]->commentCount = $commentCount;
             
-            $posts[$i]->comments = json_encode($postCommArr);
+            $posts[$i]->comments = json_encode($visibleComments);
             
         } else {
             $posts[$i]->comments = json_encode([]);
@@ -99,7 +118,7 @@ for ($i = count($posts) - 1; $i >= 0; $i--) {
         
         array_push($finalPosts, $posts[$i]);
         
-        if ($posts[$i]->hidden != true && $posts[$i]->visibility != "following") {
+        if (empty($posts[$i]->hidden) && $posts[$i]->visibility != "following") {
             $postCount++;
         }
         
@@ -119,8 +138,6 @@ $maxDist = 1;
 //posts and 2 miles otherwise, then it will expand beyond that to at least 20 posts
 
 if ($postCount < 50 || count($postUsers) < 3) {
-    
-  error_log("theres less than 50 !!");
     
     usort($posts,function($first,$second){
         return $first->distance <=> $second->distance;
@@ -165,10 +182,11 @@ if ($postCount < 50 || count($postUsers) < 3) {
                 if ($posts[$x]->comments != null) {
                     
                     $postCommArr = json_decode($posts[$x]->comments);
+                    $visibleComments = [];
                     
                     for ($v=0; $v < count($postCommArr); $v++) {
                         
-                        $notFound = true;
+                        if (!empty($postCommArr[$v]->hidden)) continue;
                         
                         for ($b=0; $b < count($users); $b++) {
                             if ($postCommArr[$v]->user == $users[$b]->id) {
@@ -176,14 +194,13 @@ if ($postCount < 50 || count($postUsers) < 3) {
                             }
                         }
                         
-                        if ($postCommArr[$v]->hidden != true) {
-                            $commentCount++;
-                        }
+                        $visibleComments[] = $postCommArr[$v];
+                        $commentCount++;
                     }
                     
                     $posts[$x]->commentCount = $commentCount;
                     
-                    $posts[$x]->comments = json_encode($postCommArr);
+                    $posts[$x]->comments = json_encode($visibleComments);
                     
                 } else {
                     $posts[$x]->comments = json_encode([]);
@@ -193,7 +210,7 @@ if ($postCount < 50 || count($postUsers) < 3) {
                 
                 array_push($finalPosts, $posts[$x]);
                 
-                if ($posts[$x]->hidden != true && $posts[$x]->visibility != "following") {
+                if (empty($posts[$x]->hidden) && $posts[$x]->visibility != "following") {
                     $postCount++;
                 }
                 
@@ -213,7 +230,6 @@ if ($postCount < 50 || count($postUsers) < 3) {
 
 }
 
-error_log("user count is" . count($postUsers));
 
 if (count($finalPosts) > 0) {
 
@@ -292,15 +308,12 @@ if (count($finalPosts) > 0) {
 
 if ($distanceCheck < 1) $distanceCheck = 1;
 
-if ($finalPosts[0] != null) $finalPosts[0]->minTime = $minTime;
-if ($finalPosts[0] != null) $finalPosts[0]->maxDist = ceil($distanceCheck);
+if (isset($finalPosts[0])) {
+    $finalPosts[0]->minTime = $minTime;
+    $finalPosts[0]->maxDist = ceil($distanceCheck);
+}
 
 echo json_encode(array_values($finalPosts));
-
-$latPostDisplay = number_format($latPost, 2);
-$longPostDisplay = number_format($longPost, 2);
-
-sendMessage("Yay! A user just accessed the feed! from lat: " . $latPostDisplay . " long: " . $longPostDisplay . " view the place here: https://geocam.app/php/viewLocation.php?lat=$latPostDisplay&long=$longPostDisplay");
 
 } else {
     echo "noLocation";
@@ -323,21 +336,27 @@ function distance(
   return $angle * $earthRadius;
 }
 
-function sendMessage($msg) {
-$webhookurl = file_get_contents("discord.txt");
-$timestamp = date("c", strtotime("now"));
-$json_data = json_encode([
-    "content" => $msg,
-    "tts" => false,
-], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-$ch = curl_init( $webhookurl );
-curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-type: application/json'));
-curl_setopt( $ch, CURLOPT_POST, 1);
-curl_setopt( $ch, CURLOPT_POSTFIELDS, $json_data);
-curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1);
-curl_setopt( $ch, CURLOPT_HEADER, 0);
-curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1);
-$response = curl_exec( $ch );
-curl_close( $ch );
+function postVisible($post, $viewerId, $users) {
+    if (!empty($post->hidden)) return false;
+
+    if ($post->visibility != "following") return true;
+
+    if ($viewerId === null) return false;
+
+    if ($post->user == $viewerId) return true;
+
+    for ($i = 0; $i < count($users); $i++) {
+        if ($users[$i]->id == $post->user) {
+            $followed = [];
+
+            if (isset($users[$i]->followed) && $users[$i]->followed != null) {
+                $followed = json_decode($users[$i]->followed);
+            }
+
+            return in_array($viewerId, $followed);
+        }
+    }
+
+    return false;
 }
 ?>

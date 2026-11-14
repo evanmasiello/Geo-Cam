@@ -5,13 +5,14 @@
 # application nothing. Verified: no JS or HTML fetches any of these by URL.
 #
 # Covers users.json, sessions.json, mailKeys.json, forgotKeys.json,
-# flags.json, commentFlags.json, blockedWords.json, discord.txt, status.txt
-# and anything similar added later.
+# flags.json, commentFlags.json, blockedWords.json, discord.txt, status.txt,
+# error_log, *.log and backup archives. Append-only additions should be
+# reflected here too.
 #
 # Only users.json, discord.txt and posts.json were protected before, and by
 # file permissions rather than by rule - so a newly created data file was
 # public by default. This inverts that.
-<FilesMatch "\.(json|txt)$">
+<FilesMatch "(^error_log$|\.(json|txt|log|bak|old|sql|zip)$)">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

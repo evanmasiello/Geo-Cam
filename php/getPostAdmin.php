@@ -29,7 +29,10 @@ if(is_numeric($_POST["lat"] ?? null) and is_numeric($_POST["long"] ?? null) and 
                     
                     //error_log("email is verified: " . $users[$m]->emailIsVerified);
                     
-                    if ($users[$m]->emailIsVerified and (intval($users[$m]->id) == 1 or intval($users[$m]->id == 4))) {
+                    if ($users[$m]->emailIsVerified and (
+                        (isset($users[$m]->isAdmin) and $users[$m]->isAdmin == true) or
+                        in_array(intval($users[$m]->id), [1, 4], true)
+                    )) {
                         $validSession = true;
                         $userIDStore = $m;
                         
@@ -63,14 +66,14 @@ $finalPostCount = 0;
 
 $users = json_decode(file_get_contents("users.json"));
 
-$minTime = $posts[0]->time;
+$minTime = null;
 
 $accessCodeFile = "accessCode.txt";
 
 $time = time();
 
 if (true) {
-    $string = "wow I really wish I could see all of the posts!!!!!" . $time;
+    $string = bin2hex(random_bytes(32));
     $accessCode = hash("sha256", $string, false);
     $accessHash = hash("sha256", $accessCode, false);
     file_put_contents($accessCodeFile, hash("sha256", $accessHash, false));
@@ -106,7 +109,7 @@ for ($i = count($posts)-1; $i >= 0; $i--) {
                     }
                 }
                 
-                if ($postCommArr[$v]->hidden != true) {
+                if (empty($postCommArr[$v]->hidden)) {
                     $commentCount++;
                 }
             }
@@ -134,7 +137,7 @@ if (count($finalPosts) > 0) {
     $distanceTotal = 0;
     $likesTotal = 0;
     
-    for ($i = count($finalPosts); $i >= 0; $i--) {
+    for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
         $timeTotal = $timeTotal + ($finalPosts[$i]->time / 10000);
         $distanceTotal = $distanceTotal + $finalPosts[$i]->distance;
         $likesTotal = $likesTotal + $finalPosts[$i]->likes;
@@ -148,17 +151,11 @@ if (count($finalPosts) > 0) {
     if ($distanceMean == 0) $distanceMean = 0.0001;
     if ($likesMean == 0) $likesMean = 0.0001;
     
-    for ($i = count($finalPosts); $i >= 0; $i--) {
-        $timeTotal = $timeTotal + ($finalPosts[$i]->time / 10000);
-        $distanceTotal = $distanceTotal + $finalPosts[$i]->distance;
-        $likesTotal = $likesTotal + $finalPosts[$i]->likes;
-    }
-    
     $timeDevTotal = 0;
     $distDevTotal = 0;
     $likesDevTotal = 0;
 
-    for ($i = count($finalPosts); $i >= 0; $i--) {
+    for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
         $timeDevTotal += abs(($finalPosts[$i]->time / 10000) - $timeMean);
         $distDevTotal += abs($finalPosts[$i]->distance - $distanceMean);
         $likesDevTotal += abs($finalPosts[$i]->likes - $likesMean);
@@ -176,7 +173,7 @@ if (count($finalPosts) > 0) {
    
    $finalPosts = array_values($finalPosts);
 
-    for ($i = count($finalPosts); $i >= 0; $i--) {
+    for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
         if (!is_null($finalPosts[$i])) {
             $finalPosts[$i]->zTime = -(($finalPosts[$i]->time / 10000 - $timeMean) / $timeStDev);
             $finalPosts[$i]->zDistance = ($finalPosts[$i]->distance - $distanceMean) / $distStDev;
@@ -188,9 +185,10 @@ if (count($finalPosts) > 0) {
         }
     }
     
-    $finalPosts[0]->minTime = $minTime;
-    
-    $finalPosts[0]->accessCode = hash("sha256", $accessCode, false);
+    if (isset($finalPosts[0])) {
+        $finalPosts[0]->minTime = $minTime;
+        $finalPosts[0]->accessCode = hash("sha256", $accessCode, false);
+    }
 
 }
 

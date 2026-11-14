@@ -62,3 +62,22 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
     </IfModule>
 </Files>
 # END Geo-Cam deploy state
+
+# BEGIN Geo-Cam private runtime files
+# Post images are served by php/getPostImage.php, which enforces hidden and
+# follower-only visibility. Direct access to the predictable filenames is not
+# allowed, and logs/backups must never be downloadable.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^posts/ - [F,L]
+</IfModule>
+<FilesMatch "(^error_log$|^\.env$|\.(log|zip|bak|old|sql)$)">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+# END Geo-Cam private runtime files

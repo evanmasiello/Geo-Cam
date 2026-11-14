@@ -1,9 +1,8 @@
 # RFC: Fix flag endpoints and the predictable admin access code
 
-> **Status as of 2026-08-21 (code at `0914871`): OPEN - unchanged.**
-> Both defects verified live: the flag guard still builds a property name from user input (`flagPost.php`), and the admin access code is still derived from a constant string plus the current second (`getPostAdmin.php`).
-> Line references below were re-verified against that commit.
-
+> **Status as of 2026-11-14: PARTIALLY RESOLVED.**
+> Flag reasons are whitelisted, duplicate flags from the same user are ignored, flags now store the real post id, and content is hidden only after three distinct reporters. The admin access code is generated with `random_bytes()` instead of a constant plus `time()`.
+> Still open: admin identity is still hardcoded to user ids 1 and 4 (with an optional `isAdmin` flag) rather than a real role, and the access code is regenerated on every admin feed load.
 
 ## Problem
 

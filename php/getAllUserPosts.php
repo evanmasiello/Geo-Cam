@@ -47,7 +47,7 @@ if ($validSession) {
     
     $postCount = 0;
     
-    for ($i = count($posts); $i >= 0; $i--) {
+    for ($i = count($posts) - 1; $i >= 0; $i--) {
         //if (distance($_POST["lat"], $_POST["long"], $post->lat, $post->long) > 1) {
         
         //error_log("distance is " . distance($latPost, $longPost, $posts[$i]->lat, $posts[$i]->long));
@@ -77,10 +77,11 @@ if ($validSession) {
             if ($posts[$i]->comments != null) {
                 
                 $postCommArr = json_decode($posts[$i]->comments);
+                $visibleComments = [];
                 
                 for ($v=0; $v < count($postCommArr); $v++) {
                     
-                    $notFound = true;
+                    if (!empty($postCommArr[$v]->hidden)) continue;
                     
                     for ($b=0; $b < count($users); $b++) {
                         if ($postCommArr[$v]->user == $users[$b]->id) {
@@ -88,14 +89,13 @@ if ($validSession) {
                         }
                     }
                     
-                    if ($postCommArr[$v]->hidden != true) {
-                        $commentCount++;
-                    }
+                    $visibleComments[] = $postCommArr[$v];
+                    $commentCount++;
                 }
                 
                 $posts[$i]->commentCount = $commentCount;
                 
-                $posts[$i]->comments = json_encode($postCommArr);
+                $posts[$i]->comments = json_encode($visibleComments);
                 
             } else {
                 $posts[$i]->comments = json_encode([]);
@@ -103,7 +103,7 @@ if ($validSession) {
             
             array_push($finalPosts, $posts[$i]);
             
-            if ($posts[$i]->hidden != true && $posts[$i]->visibility != "following") {
+            if (empty($posts[$i]->hidden) && $posts[$i]->visibility != "following") {
                 $postCount++;
             }
             
@@ -139,7 +139,7 @@ if ($validSession) {
        
        $maxDist = 1;
         
-        for ($i = count($finalPosts); $i >= 0; $i--) {
+        for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
             $timeTotal = $timeTotal + ($finalPosts[$i]->time / 10000);
             $distanceTotal = $distanceTotal + $finalPosts[$i]->distance;
             $likesTotal = $likesTotal + $finalPosts[$i]->likes;
@@ -161,17 +161,11 @@ if ($validSession) {
         if ($distanceMean == 0) $distanceMean = 0.0001;
         if ($likesMean == 0) $likesMean = 0.0001;
         
-        for ($i = count($finalPosts); $i >= 0; $i--) {
-            $timeTotal = $timeTotal + ($finalPosts[$i]->time / 10000);
-            $distanceTotal = $distanceTotal + $finalPosts[$i]->distance;
-            $likesTotal = $likesTotal + $finalPosts[$i]->likes;
-        }
-        
         $timeDevTotal = 0;
         $distDevTotal = 0;
         $likesDevTotal = 0;
     
-        for ($i = count($finalPosts); $i >= 0; $i--) {
+        for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
             $timeDevTotal += abs(($finalPosts[$i]->time / 10000) - $timeMean);
             $distDevTotal += abs($finalPosts[$i]->distance - $distanceMean);
             $likesDevTotal += abs($finalPosts[$i]->likes - $likesMean);
@@ -189,7 +183,7 @@ if ($validSession) {
        
        $finalPosts = array_values($finalPosts);
     
-        for ($i = count($finalPosts); $i >= 0; $i--) {
+        for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
             if (!is_null($finalPosts[$i])) {
                 $finalPosts[$i]->zTime = -(($finalPosts[$i]->time / 10000 - $timeMean) / $timeStDev);
                 $finalPosts[$i]->zDistance = ($finalPosts[$i]->distance - $distanceMean) / $distStDev;
@@ -203,8 +197,10 @@ if ($validSession) {
     
     }
     
-    if ($finalPosts[0] != null) $finalPosts[0]->minTime = $minTime;
-    if ($finalPosts[0] != null) $finalPosts[0]->maxDist = $maxDist;
+    if (isset($finalPosts[0])) {
+        $finalPosts[0]->minTime = $minTime;
+        $finalPosts[0]->maxDist = $maxDist;
+    }
     
     echo json_encode(array_values($finalPosts));
 
@@ -244,19 +240,28 @@ function distance(
 }
 
 function sendMessage($msg) {
-$webhookurl = file_get_contents("discord.txt");
+if (!file_exists("discord.txt")) return;
+
+$webhookurl = trim(file_get_contents("discord.txt"));
+
+if ($webhookurl === "") return;
 $timestamp = date("c", strtotime("now"));
 $json_data = json_encode([
     "content" => $msg,
     "tts" => false,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 $ch = curl_init( $webhookurl );
+if ($ch === false) return;
 curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-type: application/json'));
 curl_setopt( $ch, CURLOPT_POST, 1);
 curl_setopt( $ch, CURLOPT_POSTFIELDS, $json_data);
 curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1);
 curl_setopt( $ch, CURLOPT_HEADER, 0);
 curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1);
+// A dead webhook must not pin a PHP worker or the write lock.
+curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, 3);
+curl_setopt( $ch, CURLOPT_TIMEOUT, 5);
+curl_setopt( $ch, CURLOPT_NOSIGNAL, 1);
 $response = curl_exec( $ch );
 curl_close( $ch );
 }

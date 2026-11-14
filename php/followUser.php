@@ -54,7 +54,6 @@ if(isset($_POST["name"]) and isset($_POST["session"]) and file_exists("sessions.
     
     for ($r=0; $r < count($sessions); $r++) {
         if ($sessionHash == $sessions[$r]->key && (time() - intval($sessions[$r]->time)) < 7776000) {
-            error_log("in 1");
             $uID = $sessions[$r]->userId;
             
             $users = json_decode(file_get_contents("users.json"));
@@ -63,26 +62,20 @@ if(isset($_POST["name"]) and isset($_POST["session"]) and file_exists("sessions.
             
             for ($m=0; $m < count($users) && $shouldStillLoop; $m++) {
                 if (strtolower($users[$m]->user) == strtolower($FollowId)) {
-                    error_log("in 2");
-                    error_log("follow ID $FollowId");
                     $FollowId = $users[$m]->id;
-                    error_log("follow ID $FollowId");
                     $userNameExists = true;
                     $shouldStillLoop = false;
                 }
             }
             
             if ($userNameExists) {
-                error_log("in 3");
                 for ($m=0; $m < count($users); $m++) {
                     if ($users[$m]->id == $uID) {
-                        error_log("in 3");
                         //#error_log("user id is: " . $users[$m]->id);
                         
                         //#error_log("email is verified: " . $users[$m]->emailIsVerified);
                         
                         if ($users[$m]->emailIsVerified) {
-                            error_log("in 4");
                             $validSession = true;
                             $userIDStore = $m;
                             
@@ -120,7 +113,6 @@ if(isset($_POST["name"]) and isset($_POST["session"]) and file_exists("sessions.
     }
     
     if ($validSession) {
-        error_log("in 5");
         
         if ($shouldPush) {
             array_push($userFollowed, intval($FollowId));
@@ -135,7 +127,6 @@ if(isset($_POST["name"]) and isset($_POST["session"]) and file_exists("sessions.
         
         if (file_put_contents("users.json", json_encode($users))) {
             
-            error_log("in 6");
             
             for ($b=0; $b < count($users); $b++) {
                 for ($c=0; $c < count($userFollowed); $c++) {
@@ -174,19 +165,28 @@ if(isset($_POST["name"]) and isset($_POST["session"]) and file_exists("sessions.
 echo $response;
 
 function sendMessage($msg) {
-$webhookurl = file_get_contents("discord.txt");
+if (!file_exists("discord.txt")) return;
+
+$webhookurl = trim(file_get_contents("discord.txt"));
+
+if ($webhookurl === "") return;
 $timestamp = date("c", strtotime("now"));
 $json_data = json_encode([
     "content" => $msg,
     "tts" => false,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 $ch = curl_init( $webhookurl );
+if ($ch === false) return;
 curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-type: application/json'));
 curl_setopt( $ch, CURLOPT_POST, 1);
 curl_setopt( $ch, CURLOPT_POSTFIELDS, $json_data);
 curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1);
 curl_setopt( $ch, CURLOPT_HEADER, 0);
 curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1);
+// A dead webhook must not pin a PHP worker or the write lock.
+curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, 3);
+curl_setopt( $ch, CURLOPT_TIMEOUT, 5);
+curl_setopt( $ch, CURLOPT_NOSIGNAL, 1);
 $response = curl_exec( $ch );
 curl_close( $ch );
 }

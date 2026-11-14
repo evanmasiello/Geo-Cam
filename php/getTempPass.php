@@ -50,8 +50,6 @@ if (isset($_GET["key"]) and (strlen($_GET["key"]) > 0)) {
         
         for ($i=0; $i < count($mailArr); $i++) {
             if (hash_equals($mailArr[$i]->key, $keyHash)) {
-                error_log("key time: " . intval($mailArr[$i]->time));
-                error_log("time: " . $time);
                 $difference = $time - intval($mailArr[$i]->time);
                 if ($difference >= 0 && $difference < 600) {
                     $userID = $mailArr[$i]->userId;
@@ -92,11 +90,8 @@ if (isset($_GET["key"]) and (strlen($_GET["key"]) > 0)) {
                 
                 for ($i=0; $i < count($mailArr); $i++) {
                     
-                    error_log("maill ID " . $mailArr[$i]->userId);
-                    error_log("user ID " . $userID);
                     
                     if ($mailArr[$i]->userId == $userID) {
-                        error_log("in equals");
                         unset($mailArr[$i]);
                     }
                 }

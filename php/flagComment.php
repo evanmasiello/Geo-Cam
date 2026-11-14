@@ -67,115 +67,93 @@ if(isset($_POST["id"]) and isset($_POST["commentId"]) and isset($_POST["session"
     }
     
     if ($validSession) {
-    
         $id = $_POST["id"];
         $commentId = $_POST["commentId"];
-        
-        error_log("the comment id is $commentId");
-        
         $reason = $_POST["reason"];
+        $allowedReasons = ["vulgar", "hate", "bullying", "spam", "other"];
         $filename = "../posts/posts.json";
         $posts = json_decode(file_get_contents($filename));
-    
         $posts = array_values($posts);
-        
-        $reasonName = "not" . $reason;
-        
-        $commentSave;
-        
-        for ($v=0; $v < count($posts); $v++) {
-            if ($posts[$v]->id == $id) {
+        $postSave = -1;
+        $commentSave = -1;
+        $commentArr = [];
+
+        if (in_array($reason, $allowedReasons, true)) {
+            for ($v = 0; $v < count($posts); $v++) {
+                if ($posts[$v]->id != $id) continue;
+
                 $postSave = $v;
-                
+
                 if ($posts[$v]->comments != null) {
                     $commentArr = json_decode($posts[$v]->comments);
-                    for ($m=0; $m < count($commentArr); $m++) {
+
+                    for ($m = 0; $m < count($commentArr); $m++) {
                         if ($commentArr[$m]->id == $commentId) {
                             $commentSave = $m;
-                            $postSave = $v;
                         }
                     }
                 }
             }
         }
-        
-        $commWasChecked = $commentArr[$commentSave]->$reasonName;
-        
-            if ($commWasChecked != true) {
-        
-                $commentArr[$commentSave]->hidden = true;
-                $userId = $commentArr[$commentSave]->user;
-                $comment = $commentArr[$commentSave]->comment;
-                $posts[$postSave]->comments = json_encode($commentArr);
-                $commentID = $_POST["commentId"];
-            
-                $json = json_encode($posts);
-                
-                if (file_put_contents($filename, $json)) {
-            
-                $locationFlag = "commentFlags.json";
-                
-                if (file_exists($locationFlag)) {
-                    
-                    $jsonDataFlag = file_get_contents($locationFlag);
-                    
-                    $jsonArrayFlag = json_decode($jsonDataFlag);
-                    
-                    $flagID = $jsonArrayFlag[count($jsonArrayFlag)-1]->id + 1;
-                    
-                    $userNotExists = true;
-                    
-                    $newFlag = Array (
-                        "id" => $flagID,
-                        "postID" => $postSave,
-                        "commentID" => $commentID,
-                        "reason" => $reason,
-                        "commentUser" => $userId,
-                        "comment" => $comment,
-                        "user" => $uID,
-                    );
-                        
-                    array_push($jsonArrayFlag, $newFlag);
-                    
-                } else {
-                    $flagID = 0;
-                    
-                    $jsonArrayFlag = Array (
-                            "0" => Array (
-                            "id" => $flagID,
-                            "postID" => $postSave,
-                            "commentID" => $commentID,
-                            "reason" => $reason,
-                            "commentUser" => $userId,
-                            "comment" => $comment,
-                            "user" => $uID,
-                        )
-                    );
-                }
-                
-                // encode array to json
-                $jsonFlag = json_encode($jsonArrayFlag);
-                
-                if (!$emailProblem) {
-                    file_put_contents($locationFlag, $jsonFlag);
-                    $response = 1;   
-                    sendMessage("Alert! $uName just flagged a comment! click this link to review it: https://geocam.app/admin/reviewComment <@&984817096171061289>");   
-                    logAction($uName . " (user id " . $uID . ") flagged comment #" . $id . " on post #$postSave for " . $reason);
-                } else {
-                    $response = 0;
-                }
-            } else {
-                $response = 0;
-            }
-            
-        } else {
-            $response = "alreadyChecked";
-        }
-            
-        } else {
+
+        if ($postSave < 0 || $commentSave < 0) {
             $response = 0;
+        } else {
+            $locationFlag = "commentFlags.json";
+            $jsonArrayFlag = [];
+
+            if (file_exists($locationFlag)) {
+                $jsonArrayFlag = json_decode(file_get_contents($locationFlag));
+
+                if (!is_array($jsonArrayFlag)) $jsonArrayFlag = [];
+            }
+
+            $alreadyFlagged = false;
+            $flagUsers = [];
+
+            for ($v = 0; $v < count($jsonArrayFlag); $v++) {
+                if ($jsonArrayFlag[$v]->postID == $posts[$postSave]->id && $jsonArrayFlag[$v]->commentID == $commentId) {
+                    $flagUsers[strval($jsonArrayFlag[$v]->user)] = true;
+                    if ($jsonArrayFlag[$v]->user == $uID) $alreadyFlagged = true;
+                }
+            }
+
+            if ($alreadyFlagged) {
+                $response = "alreadyChecked";
+            } else {
+                $flagID = 0;
+
+                if (count($jsonArrayFlag) > 0) {
+                    $flagID = $jsonArrayFlag[count($jsonArrayFlag) - 1]->id + 1;
+                }
+
+                $jsonArrayFlag[] = Array (
+                    "id" => $flagID,
+                    "postID" => $posts[$postSave]->id,
+                    "postIndex" => $postSave,
+                    "commentID" => $commentArr[$commentSave]->id,
+                    "reason" => $reason,
+                    "commentUser" => $commentArr[$commentSave]->user,
+                    "comment" => $commentArr[$commentSave]->comment,
+                    "user" => $uID,
+                    "time" => time(),
+                );
+
+                $flagUsers[strval($uID)] = true;
+
+                if (count($flagUsers) >= 3) {
+                    $commentArr[$commentSave]->hidden = true;
+                    $posts[$postSave]->comments = json_encode($commentArr);
+                    file_put_contents($filename, json_encode($posts));
+                }
+
+                file_put_contents($locationFlag, json_encode($jsonArrayFlag));
+                $response = 1;
+                sendMessage("Alert! $uName just flagged a comment! click this link to review it: https://geocam.app/admin/reviewComment <@&984817096171061289>");
+                logAction($uName . " (user id " . $uID . ") flagged comment #" . $commentId . " on post #" . $id . " for " . $reason);
+            }
         }
-        
+    }
     } catch (Throwable $e) {
        //echo 'And my error is: ' . $e->getMessage();
        file_put_contents($statusFile, "CLOSED");
@@ -190,19 +168,28 @@ if(isset($_POST["id"]) and isset($_POST["commentId"]) and isset($_POST["session"
 echo $response;
 
 function sendMessage($msg) {
-$webhookurl = file_get_contents("discord.txt");
+if (!file_exists("discord.txt")) return;
+
+$webhookurl = trim(file_get_contents("discord.txt"));
+
+if ($webhookurl === "") return;
 $timestamp = date("c", strtotime("now"));
 $json_data = json_encode([
     "content" => $msg,
     "tts" => false,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 $ch = curl_init( $webhookurl );
+if ($ch === false) return;
 curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-type: application/json'));
 curl_setopt( $ch, CURLOPT_POST, 1);
 curl_setopt( $ch, CURLOPT_POSTFIELDS, $json_data);
 curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1);
 curl_setopt( $ch, CURLOPT_HEADER, 0);
 curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1);
+// A dead webhook must not pin a PHP worker or the write lock.
+curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, 3);
+curl_setopt( $ch, CURLOPT_TIMEOUT, 5);
+curl_setopt( $ch, CURLOPT_NOSIGNAL, 1);
 $response = curl_exec( $ch );
 curl_close( $ch );
 }

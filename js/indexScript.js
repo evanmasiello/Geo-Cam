@@ -445,6 +445,7 @@ function showPosts() {
     
     formDataFeed.append('lat', lat);
     formDataFeed.append('long', long);
+    if (session !== "") formDataFeed.append('session', session);
     
    //console.log("post mode is: " + postMode);
     
@@ -721,6 +722,7 @@ function getGlobalPosts() {
         formDataFeed.append('lat', lat);
         formDataFeed.append('long', long);
     }
+    if (session !== "") formDataFeed.append('session', session);
 
     var xmlhttp = new XMLHttpRequest();
 
@@ -1053,7 +1055,7 @@ function fillPics(jsonInfo) {
            //<img id=\"loadingOverlay" + object.id + "\" class=\"loader overlayFeed src='./assets/loading.gif'>
            //loading='lazy'
 
-            feedString += "<div class='imageWrapper'><div id='loadingOverlay" + object.id + "' class='dot-flashing overlayFeed'></div><img id='" + "img" + object.id + "'onclick='doubleClickLike(" + object.id + ")' src='./posts/post" + object.id + ".png' style=\" background-repeat: no-repeat; background-position: center; background-origin: padding-box padding-box; background-size:" + parent.innerWidth + " " + parent.innerWidth + "; background: url(\'./posts/smallPost" + object.id + ".jpg\'); background-size:100% 100%;\" onload='imageLoaded(" + object.id + ");'></div> <div id='" + "cap" + object.id + "'class='caption'><div class='capLeft'><p> <span id='locationSpan'><i class='fa-solid fa-location-dot'></i> " + distanceString + "</span> <i class='fa-solid fa-calendar'></i> " + newdate + " </p></div><div class='capRight'><p> <span id='likes" + object.id + "'>" + displayNum(object.likes, false) + "</span> <i id='heart" + object.id + "' onclick='likePost(" + object.id + ")' class='" + heartClass + " fa-heart'></i>  <i id='flag" + object.id + "' class='fa-solid " + flagClass + "' onclick='flagPost(" + object.id + ")'></i></p></div>";
+            feedString += "<div class='imageWrapper'><div id='loadingOverlay" + object.id + "' class='dot-flashing overlayFeed'></div><img id='" + "img" + object.id + "'onclick='doubleClickLike(" + object.id + ")' src='./php/getPostImage.php?id=" + object.id + "' style=\" background-repeat: no-repeat; background-position: center; background-origin: padding-box padding-box; background-size:" + parent.innerWidth + " " + parent.innerWidth + "; background: url(\'./php/getPostImage.php?id=" + object.id + "&amp;size=small\'); background-size:100% 100%;\" onload='imageLoaded(" + object.id + ");'></div> <div id='" + "cap" + object.id + "'class='caption'><div class='capLeft'><p> <span id='locationSpan'><i class='fa-solid fa-location-dot'></i> " + distanceString + "</span> <i class='fa-solid fa-calendar'></i> " + newdate + " </p></div><div class='capRight'><p> <span id='likes" + object.id + "'>" + displayNum(object.likes, false) + "</span> <i id='heart" + object.id + "' onclick='likePost(" + object.id + ")' class='" + heartClass + " fa-heart'></i>  <i id='flag" + object.id + "' class='fa-solid " + flagClass + "' onclick='flagPost(" + object.id + ")'></i></p></div>";
             
             var styleAlt = "display: none;";
             var commentButtonString = " - <span id='showComm" + object.id + "'>Show</span><span id='hideComm" + object.id + "' style='display:none;'>Hide</span> <span id='countComm" + object.id + "'>" + displayNum(object.commentCount, true) + "</span> Comment<span id='multiComm" + object.id + "'>s</span> - ";
@@ -1415,7 +1417,7 @@ function flagComment() {
                 hideWindows();
                 refreshComments();
                 
-                alert("The comment has been flagged! It will now be hidden until it is reviewed");
+                alert("Thanks! This comment has been reported for review.");
                 
                 } else if (response == "emailNotConfirmed") {
                     //console.log("Like Failed");
@@ -1424,7 +1426,7 @@ function flagComment() {
                     //liking = false;
                 } else if (response == "alreadyChecked") {
                     //console.log("Like Failed");
-                    alert("Sorry! We've already determined that this comment doesn't violate that guidline.");
+                    alert("You've already flagged this comment.");
                             
                     //liking = false;
                 } else {
@@ -1597,6 +1599,7 @@ function refreshComments() {
             
             var formData = new FormData();
             formData.append("id", openComments);
+            if (session !== "") formData.append("session", session);
     
             var xhttp = new XMLHttpRequest();
         
@@ -1714,17 +1717,11 @@ function executeFlag() {
                 
                 hideWindows();
                 
-                alert("The post has been flagged! It will now be hidden until it is reviewed");
+                alert("Thanks! This post has been reported for review.");
                 
                 document.getElementById("postContainter" + postToFlag).style.display = "none";
                 
                 deletedPosts.push(postToFlag);
-                
-                if (document.getElementById("name").innerHTML !== "bigmas" || document.getElementById("name").innerHTML !== "johnrey1998") {
-                    sendUpdate("Alert! " + document.getElementById("name").innerHTML + " just flagged a post! click this link to review it: https://geocam.app/admin/review <@&984817096171061289>");   
-                } else {
-                    sendUpdate("Alert! " + document.getElementById("name").innerHTML + " just flagged a post! click this link to review it: https://geocam.app/admin/review, since this was flagged by a founder no @ mention is neccessary");   
-                }
                 
             } else if (response == "emailNotConfirmed") {
                 //console.log("Like Failed");
@@ -1733,7 +1730,7 @@ function executeFlag() {
                 //liking = false;
             } else if (response == "alreadyChecked") {
                 //console.log("Like Failed");
-                alert("Sorry! We've already determined that this post doesn't violate that guidline.");
+                alert("You've already flagged this post.");
                         
                 //liking = false;
             } else {

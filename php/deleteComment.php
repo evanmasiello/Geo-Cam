@@ -76,6 +76,7 @@ if(isset($_POST["id"]) and isset($_POST["commentId"]) and isset($_POST["session"
         $posts = array_values($posts);
         
         $commentFound = false;
+        $newlyHidden = false;
         
         for ($i=0; $i < count($posts) && !$commentFound; $i++) {
             if ($posts[$i]->id == $id) {
@@ -86,10 +87,11 @@ if(isset($_POST["id"]) and isset($_POST["commentId"]) and isset($_POST["session"
                             $commentFound = true;
                             if ($comments[$x]->user != $uID) {
                                 $response = "notYourComment";
-                            } else {
+                            } else if (empty($comments[$x]->hidden)) {
                                 $comments[$x]->hidden = true;
                                 $commentAuthor = $comments[$x]->user;
                                 $posts[$i]->comments = json_encode($comments);
+                                $newlyHidden = true;
                             }
                         }
                     }
@@ -97,10 +99,10 @@ if(isset($_POST["id"]) and isset($_POST["commentId"]) and isset($_POST["session"
             }
         }
 
-        if ($commentFound && $response != "notYourComment") {
+        if ($commentFound && $response != "notYourComment" && $newlyHidden) {
             for ($l=0; $l < count($users); $l++) {
                 if ($users[$l]->id == $commentAuthor) {
-                    if ($users[$l]->commentCount != null) {
+                    if (!empty($users[$l]->commentCount)) {
                         $users[$l]->commentCount = max(0, $users[$l]->commentCount - 1);
                     } else {
                         $users[$l]->commentCount = 0;
@@ -117,6 +119,8 @@ if(isset($_POST["id"]) and isset($_POST["commentId"]) and isset($_POST["session"
             } else {
                 $response = 0;
             }
+        } else if ($commentFound && $response != "notYourComment") {
+            $response = 1;
         } else if ($response != "notYourComment") {
             $response = 0;
         }
@@ -139,19 +143,28 @@ if(isset($_POST["id"]) and isset($_POST["commentId"]) and isset($_POST["session"
 echo $response;
 
 function sendMessage($msg) {
-$webhookurl = file_get_contents("discord.txt");
+if (!file_exists("discord.txt")) return;
+
+$webhookurl = trim(file_get_contents("discord.txt"));
+
+if ($webhookurl === "") return;
 $timestamp = date("c", strtotime("now"));
 $json_data = json_encode([
     "content" => $msg,
     "tts" => false,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 $ch = curl_init( $webhookurl );
+if ($ch === false) return;
 curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-type: application/json'));
 curl_setopt( $ch, CURLOPT_POST, 1);
 curl_setopt( $ch, CURLOPT_POSTFIELDS, $json_data);
 curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1);
 curl_setopt( $ch, CURLOPT_HEADER, 0);
 curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1);
+// A dead webhook must not pin a PHP worker or the write lock.
+curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, 3);
+curl_setopt( $ch, CURLOPT_TIMEOUT, 5);
+curl_setopt( $ch, CURLOPT_NOSIGNAL, 1);
 $response = curl_exec( $ch );
 curl_close( $ch );
 }

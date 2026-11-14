@@ -55,9 +55,7 @@ if(isset($_POST["likes"]) and file_exists($filename) and isset($_POST["session"]
         }
     }
     
-    error_log( "session is valid: $validSession");
     
-    error_log( "count users: " . count($users));
     
     if ($validSession) {
         $decoded = json_decode($_POST["likes"], true);

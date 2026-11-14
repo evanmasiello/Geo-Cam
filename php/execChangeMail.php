@@ -40,9 +40,11 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
     
     $sessionHash = hash("sha256", $session, false);
     
-    $email = $_POST["newMail"];
+    $email = trim($_POST["newMail"]);
+    $emailValid = (filter_var($email, FILTER_VALIDATE_EMAIL) !== false) && !preg_match('/[\r\n]/', $email);
     
     $validSession = false;
+    $users = [];
     
     //do shit to make sure that files are stored with good error messages
     //verify mail is unique and proper
@@ -95,12 +97,6 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
                     $response = "mailUsed";
                 }
             }
-                
-            if (str_contains($emailFilter2, "@") and str_contains($emailFilter2, ".")) {
-                $emailValid = true;
-            } else {
-                $emailValid = false;
-            }
         
         //}
     }
@@ -147,7 +143,7 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
                     
                 }
                 
-                $to_email = $_POST["newMail"];
+                $to_email = $email;
                 $secondCount = $time % 6000000;
                 $dateString = date("m/d/Y");
                 $subject = "Confirm Geo Cam Email ($dateString - $secondCount)";
@@ -160,7 +156,7 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
                 // encode array to json
                 $jsonMail = json_encode($jsonArrayMail);
                 
-                $users[$userIdSave]->email = $_POST["newMail"];
+                $users[$userIdSave]->email = $email;
                 $users[$userIdSave]->emailIsVerified = false;
                 
                 if (file_put_contents($locationMail, $jsonMail) and mail($to_email, $subject, $body, $headers) and file_put_contents("users.json", json_encode($users))) {
@@ -195,19 +191,28 @@ if(isset($_POST["session"]) and file_exists("sessions.json") and isset($_POST["p
 echo $response;
 
 function sendMessage($msg) {
-$webhookurl = file_get_contents("discord.txt");
+if (!file_exists("discord.txt")) return;
+
+$webhookurl = trim(file_get_contents("discord.txt"));
+
+if ($webhookurl === "") return;
 $timestamp = date("c", strtotime("now"));
 $json_data = json_encode([
     "content" => $msg,
     "tts" => false,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 $ch = curl_init( $webhookurl );
+if ($ch === false) return;
 curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-type: application/json'));
 curl_setopt( $ch, CURLOPT_POST, 1);
 curl_setopt( $ch, CURLOPT_POSTFIELDS, $json_data);
 curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1);
 curl_setopt( $ch, CURLOPT_HEADER, 0);
 curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1);
+// A dead webhook must not pin a PHP worker or the write lock.
+curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, 3);
+curl_setopt( $ch, CURLOPT_TIMEOUT, 5);
+curl_setopt( $ch, CURLOPT_NOSIGNAL, 1);
 $response = curl_exec( $ch );
 curl_close( $ch );
 }

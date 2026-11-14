@@ -1,9 +1,8 @@
 # RFC: Move the datastore & secret files out of the web root
 
-> **Status as of 2026-08-21 (code at `0914871`): PARTIALLY MITIGATED.**
-> `php/.htaccess` now denies HTTP access to `*.json` and `*.txt` in that directory, and the root `.htaccess` denies the deploy sync state. Before that, only `users.json`, `discord.txt` and `posts.json` were protected, by file permissions rather than by rule. The underlying design point stands: the datastore still lives inside the web root, so this RFC's actual proposal - move it out - is undecided.
-> Line references below were re-verified against that commit.
-
+> **Status as of 2026-11-14: PARTIALLY MITIGATED.**
+> `php/.htaccess` now also denies `error_log`, `*.log`, `*.bak`, `*.old`, `*.sql` and `*.zip`; the root `.htaccess` denies the deploy state, logs/backups and direct `posts/` access. Password-hash logging was removed.
+> Still open: the datastore and webhook secret remain inside the web root; moving them out is the durable fix.
 
 ## Problem
 All application state lives in flat files written by the PHP scripts using

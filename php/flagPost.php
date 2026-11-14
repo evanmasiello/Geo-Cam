@@ -67,102 +67,80 @@ if(isset($_POST["id"]) and isset($_POST["reason"]) and isset($_POST["session"]) 
     }
     
     if ($validSession) {
-    
         $id = $_POST["id"];
         $reason = $_POST["reason"];
+        $allowedReasons = ["consent", "vulgar", "illegal", "irrelivant", "other"];
         $filename = "../posts/posts.json";
         $posts = json_decode(file_get_contents($filename));
-    
         $posts = array_values($posts);
-        
-        $reasonName = "not" . $reason;
-        
-        $postSave;
-        
-        for ($v=0; $v < count($posts); $v++) {
-            if ($posts[$v]->id == $id) {
-                $postSave = $v;
-            }
-        }
-        
-        $postWasChecked = $posts[$postSave]->$reasonName;
-        
-        if($reason == "consent") $postWasChecked = false;
-        
-        if ($postWasChecked != true) {
-    
-        $posts[$postSave]->hidden = true;
-        $userId = $posts[$postSave]->user;
-    
-        $json = json_encode($posts);
-        file_put_contents($filename, $json); //generate json file
-        
-        $locationFlag = "flags.json";
-            
-            if (file_exists($locationFlag)) {
-                
-                $jsonDataFlag = file_get_contents($locationFlag);
-                
-                $jsonArrayFlag = json_decode($jsonDataFlag);
-                
-                $flagID = $jsonArrayFlag[count($jsonArrayFlag)-1]->id + 1;
-                
-                $userNotExists = true;
-                
-                $newFlag = Array (
-                    "id" => $flagID,
-                    "postID" => $postSave,
-                    "reason" => $reason,
-                    "postUser" => $userId,
-                    "user" => $uID,
-                );
-                    
-                array_push($jsonArrayFlag, $newFlag);
-                
-            } else {
-                $flagID = 0;
-                
-                if (isset($_POST["email"])) {
-                    $jsonArrayFlag = Array (
-                        "0" => Array (
-                            "id" => $flagID,
-                            "postID" => $postSave,
-                            "reason" => $reason,
-                            "postUser" => $userId,
-                            "user" => $uID,
-                        )
-                    );
-                } else {
-                    $jsonArrayFlag = Array (
-                        "0" => Array (
-                            "id" => $flagID,
-                            "postID" => $postSave,
-                            "reason" => $reason,
-                            "postUser" => $userId,
-                            "user" => $uID,
-                        )
-                    );
+        $postSave = -1;
+
+        if (in_array($reason, $allowedReasons, true)) {
+            for ($v = 0; $v < count($posts); $v++) {
+                if ($posts[$v]->id == $id) {
+                    $postSave = $v;
                 }
             }
-        
-            // encode array to json
-            $jsonFlag = json_encode($jsonArrayFlag);
-            
-            if (!$emailProblem) {
-                file_put_contents($locationFlag, $jsonFlag);
-                $response = 1;   
-                sendMessage("Alert! $uName just flagged a post! click this link to review it: https://geocam.app/admin/review <@&984817096171061289>");   
-                logAction($uName . " (user id " . $uID . ") flagged post #" . $id . " for " . $reason);
-            } else {
-                $response = 0;
+        }
+
+        if ($postSave < 0) {
+            $response = 0;
+        } else {
+            $locationFlag = "flags.json";
+            $jsonArrayFlag = [];
+
+            if (file_exists($locationFlag)) {
+                $jsonArrayFlag = json_decode(file_get_contents($locationFlag));
+
+                if (!is_array($jsonArrayFlag)) $jsonArrayFlag = [];
             }
-            
-            } else {
+
+            $alreadyFlagged = false;
+            $flagUsers = [];
+
+            for ($v = 0; $v < count($jsonArrayFlag); $v++) {
+                if ($jsonArrayFlag[$v]->postID == $posts[$postSave]->id) {
+                    $flagUsers[strval($jsonArrayFlag[$v]->user)] = true;
+                    if ($jsonArrayFlag[$v]->user == $uID) $alreadyFlagged = true;
+                }
+            }
+
+            if ($alreadyFlagged) {
                 $response = "alreadyChecked";
+            } else {
+                $flagID = 0;
+
+                if (count($jsonArrayFlag) > 0) {
+                    $flagID = $jsonArrayFlag[count($jsonArrayFlag) - 1]->id + 1;
+                }
+
+                $jsonArrayFlag[] = Array (
+                    "id" => $flagID,
+                    "postID" => $posts[$postSave]->id,
+                    "postIndex" => $postSave,
+                    "reason" => $reason,
+                    "postUser" => $posts[$postSave]->user,
+                    "user" => $uID,
+                    "time" => time(),
+                );
+
+                $flagUsers[strval($uID)] = true;
+
+                if (count($flagUsers) >= 3) {
+                    $posts[$postSave]->hidden = true;
+                    $postId = $posts[$postSave]->id;
+                    chmod("../posts/post" . $postId . ".png", 0640);
+                    chmod("../posts/smallPost" . $postId . ".jpg", 0640);
+                    file_put_contents($filename, json_encode($posts));
+                }
+
+                file_put_contents($locationFlag, json_encode($jsonArrayFlag));
+                $response = 1;
+                sendMessage("Alert! $uName just flagged a post! click this link to review it: https://geocam.app/admin/review <@&984817096171061289>");
+                logAction($uName . " (user id " . $uID . ") flagged post #" . $id . " for " . $reason);
             }
-        
-        }    
-        
+        }
+    }
     } catch (Throwable $e) {
        //echo 'And my error is: ' . $e->getMessage();
        file_put_contents($statusFile, "CLOSED");
@@ -177,19 +155,28 @@ if(isset($_POST["id"]) and isset($_POST["reason"]) and isset($_POST["session"]) 
 echo $response;
 
 function sendMessage($msg) {
-$webhookurl = file_get_contents("discord.txt");
+if (!file_exists("discord.txt")) return;
+
+$webhookurl = trim(file_get_contents("discord.txt"));
+
+if ($webhookurl === "") return;
 $timestamp = date("c", strtotime("now"));
 $json_data = json_encode([
     "content" => $msg,
     "tts" => false,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 $ch = curl_init( $webhookurl );
+if ($ch === false) return;
 curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-type: application/json'));
 curl_setopt( $ch, CURLOPT_POST, 1);
 curl_setopt( $ch, CURLOPT_POSTFIELDS, $json_data);
 curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1);
 curl_setopt( $ch, CURLOPT_HEADER, 0);
 curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1);
+// A dead webhook must not pin a PHP worker or the write lock.
+curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, 3);
+curl_setopt( $ch, CURLOPT_TIMEOUT, 5);
+curl_setopt( $ch, CURLOPT_NOSIGNAL, 1);
 $response = curl_exec( $ch );
 curl_close( $ch );
 }

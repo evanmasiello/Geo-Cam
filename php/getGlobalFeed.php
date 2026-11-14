@@ -1,6 +1,6 @@
 <?php
 
-if (isset($_POST["lat"]) and isset($_POST["long"]) and !is_null($_POST["lat"]) and !is_null($_POST["long"])) {
+if (isset($_POST["lat"]) and isset($_POST["long"]) and is_numeric($_POST["lat"]) and is_numeric($_POST["long"])) {
     $latPost = $_POST["lat"];
     $longPost = $_POST["long"];
 
@@ -9,27 +9,34 @@ if (isset($_POST["lat"]) and isset($_POST["long"]) and !is_null($_POST["lat"]) a
     //echo $postData;
 
     $posts = json_decode($postData);
+    if (!is_array($posts)) $posts = [];
     $finalPosts = [];
 
     $finalPostCount = 0;
 
     $users = json_decode(file_get_contents("users.json"));
+    if (!is_array($users)) $users = [];
 
-    $minTime = $posts[0]->time;
+    $minTime = null;
     $time = time();
 
     //foreach ($posts as $post) {
     for ($i = count($posts) - 1; $i >= 0; $i--) {
-        if (($finalPostCount < 20 or $time - $posts[$i]->time < 86400) && $posts[$i]->visibility == "all") {
+        if (
+            ($finalPostCount < 20 or $time - $posts[$i]->time < 86400) &&
+            $posts[$i]->visibility == "all" &&
+            empty($posts[$i]->hidden)
+        ) {
             $posts[$i]->commentCount = 0;
 
             $commentCount = 0;
 
             if ($posts[$i]->comments != null) {
                 $postCommArr = json_decode($posts[$i]->comments);
+                $visibleComments = [];
 
                 for ($v = 0; $v < count($postCommArr); $v++) {
-                    $notFound = true;
+                    if (!empty($postCommArr[$v]->hidden)) continue;
 
                     for ($b = 0; $b < count($users); $b++) {
                         if ($postCommArr[$v]->user == $users[$b]->id) {
@@ -37,23 +44,24 @@ if (isset($_POST["lat"]) and isset($_POST["long"]) and !is_null($_POST["lat"]) a
                         }
                     }
 
-                    if ($postCommArr[$v]->hidden != true) {
-                        $commentCount++;
-                    }
+                    $visibleComments[] = $postCommArr[$v];
+                    $commentCount++;
                 }
 
                 $posts[$i]->commentCount = $commentCount;
 
-                $posts[$i]->comments = json_encode($postCommArr);
+                $posts[$i]->comments = json_encode($visibleComments);
             } else {
                 $posts[$i]->comments = json_encode([]);
             }
-            
+
             array_push($finalPosts, $posts[$i]);
 
-            if ($posts[$i]->time < $minTime) {
+            if ($minTime === null || $posts[$i]->time < $minTime) {
                 $minTime = $posts[$i]->time;
             }
+
+            $userVar = "deleted user";
 
             for ($c = 0; $c < count($users); $c++) {
                 if ($users[$c]->id == $posts[$i]->user) {
@@ -61,17 +69,15 @@ if (isset($_POST["lat"]) and isset($_POST["long"]) and !is_null($_POST["lat"]) a
                 }
             }
 
-            if ($posts[$i]->user == -1) {
-                $userVar = "deleted user";
-            }
-
-            $finalPosts[$finalPostCount]->postedBy = $userVar;
-            $finalPosts[$finalPostCount]->distance = distance(
+            $posts[$i]->distance = distance(
                 $latPost,
                 $longPost,
                 $posts[$i]->lat,
                 $posts[$i]->long
             );
+            $posts[$i]->lat = 0;
+            $posts[$i]->long = 0;
+            $finalPosts[$finalPostCount]->postedBy = $userVar;
             $finalPostCount++;
         }
     }
@@ -87,7 +93,7 @@ if (isset($_POST["lat"]) and isset($_POST["long"]) and !is_null($_POST["lat"]) a
         $distanceTotal = 0;
         $likesTotal = 0;
 
-        for ($i = count($finalPosts); $i >= 0; $i--) {
+        for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
             $timeTotal = $timeTotal + $finalPosts[$i]->time / 10000;
             $distanceTotal = $distanceTotal + $finalPosts[$i]->distance;
             $likesTotal = $likesTotal + $finalPosts[$i]->likes;
@@ -110,17 +116,11 @@ if (isset($_POST["lat"]) and isset($_POST["long"]) and !is_null($_POST["lat"]) a
             $likesMean = 0.0001;
         }
 
-        for ($i = count($finalPosts); $i >= 0; $i--) {
-            $timeTotal = $timeTotal + $finalPosts[$i]->time / 10000;
-            $distanceTotal = $distanceTotal + $finalPosts[$i]->distance;
-            $likesTotal = $likesTotal + $finalPosts[$i]->likes;
-        }
-
         $timeDevTotal = 0;
         $distDevTotal = 0;
         $likesDevTotal = 0;
 
-        for ($i = count($finalPosts); $i >= 0; $i--) {
+        for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
             $timeDevTotal += abs($finalPosts[$i]->time / 10000 - $timeMean);
             $distDevTotal += abs($finalPosts[$i]->distance - $distanceMean);
             $likesDevTotal += abs($finalPosts[$i]->likes - $likesMean);
@@ -144,7 +144,7 @@ if (isset($_POST["lat"]) and isset($_POST["long"]) and !is_null($_POST["lat"]) a
 
         $finalPosts = array_values($finalPosts);
 
-        for ($i = count($finalPosts); $i >= 0; $i--) {
+        for ($i = count($finalPosts) - 1; $i >= 0; $i--) {
             if (!is_null($finalPosts[$i])) {
                 $finalPosts[$i]->zTime = -(
                     ($finalPosts[$i]->time / 10000 - $timeMean) /
@@ -157,10 +157,8 @@ if (isset($_POST["lat"]) and isset($_POST["long"]) and !is_null($_POST["lat"]) a
             }
         }
 
-        if ($finalPosts[0] != null) {
+        if (isset($finalPosts[0])) {
             $finalPosts[0]->minTime = $minTime;
-        }
-        if ($finalPosts[0] != null) {
             $finalPosts[0]->maxDist = ceil($maxDist);
         }
     }

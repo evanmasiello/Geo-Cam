@@ -108,7 +108,6 @@ if(isset($_POST["id"]) and isset($_POST["session"]) and file_exists("sessions.js
         if (file_put_contents($filename, $json) and file_put_contents("users.json", json_encode($users))) {
             $response = 1;
             
-            error_log("in unlike response");
             
             sendMessage("Woah! " . $users[$userIDStore]->user . " just unliked a post! They have now liked " . count(json_decode($users[$userIDStore]->likes)) . " posts");
             logAction($users[$userIDStore]->user . " (user " . $users[$userIDStore]->id . ") unliked post #" . $_POST["id"] . " They've now liked " . count(json_decode($users[$userIDStore]->likes)) . " posts");
@@ -132,25 +131,33 @@ if(isset($_POST["id"]) and isset($_POST["session"]) and file_exists("sessions.js
 echo $response;
 
 function sendMessage($msg) {
-$webhookurl = file_get_contents("discord.txt");
+if (!file_exists("discord.txt")) return;
+
+$webhookurl = trim(file_get_contents("discord.txt"));
+
+if ($webhookurl === "") return;
 $timestamp = date("c", strtotime("now"));
 $json_data = json_encode([
     "content" => $msg,
     "tts" => false,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 $ch = curl_init( $webhookurl );
+if ($ch === false) return;
 curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-type: application/json'));
 curl_setopt( $ch, CURLOPT_POST, 1);
 curl_setopt( $ch, CURLOPT_POSTFIELDS, $json_data);
 curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1);
 curl_setopt( $ch, CURLOPT_HEADER, 0);
 curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1);
+// A dead webhook must not pin a PHP worker or the write lock.
+curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, 3);
+curl_setopt( $ch, CURLOPT_TIMEOUT, 5);
+curl_setopt( $ch, CURLOPT_NOSIGNAL, 1);
 $response = curl_exec( $ch );
 curl_close( $ch );
 }
 
 function logAction($msgLog) {
-    error_log("in unlike log");
     
     $timeLog = strval(round(microtime(true)));
     

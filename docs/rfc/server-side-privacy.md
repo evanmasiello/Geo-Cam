@@ -1,9 +1,8 @@
 # RFC: Enforce post/comment privacy server-side
 
-> **Status as of 2026-08-21 (code at `0914871`): PARTIALLY RESOLVED.**
-> `newGetPost.php` now filters server-side on both `hidden` and `visibility`, so the central claim about that endpoint is no longer true. `getPostsComments.php` is unchanged: still no session requirement and still returns hidden comments. Narrow this RFC to that endpoint.
-> Line references below were re-verified against that commit.
-
+> **Status as of 2026-11-14: RESOLVED.**
+> `newGetPost.php` now filters `hidden` and follower-only posts before building the response, and `getGlobalFeed.php` excludes hidden posts and zeroes coordinates. `getPostsComments.php` requires a session only for follower-only posts, rejects hidden/deleted posts, and strips hidden comments. Post images are served through `php/getPostImage.php` with the same checks; direct `posts/` access is denied by the root `.htaccess`.
+> Residual: precise `distance` values still permit trilateration; consider quantizing them in the privacy/API cleanup.
 
 ## Problem
 Privacy filtering for posts and comments happens **only in the browser**:

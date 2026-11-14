@@ -1,9 +1,7 @@
 # RFC: Fix registration failure on empty users.json and weak email validation
 
-> **Status as of 2026-08-21 (code at `0914871`): OPEN - one supporting claim stale.**
-> The bug is live: `$emailValid` is still assigned only inside the user loop and read outside it, so a first signup against an empty `users.json` still fails. The supporting claim that the repo ships a `users.json` containing a single newline is no longer true - that file is gitignored and excluded from deploys.
-> Line references below were re-verified against that commit.
-
+> **Status as of 2026-11-14: RESOLVED.**
+> Email validation now runs once before the user loop with `filter_var()` plus a CR/LF check, so a first signup against an empty or missing `users.json` succeeds. `execChangeMail.php` uses the same validation and stores the trimmed address.
 
 ## Problem
 `php/createUser.php` only computes `$emailValid` **inside** the loop that

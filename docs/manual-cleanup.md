@@ -76,14 +76,16 @@ been revoked, so this is now hygiene rather than a leak.
 These are live PHP endpoints, unauthenticated, one uncommented line away
 from doing something real:
 
-- `php/checkCharacters.php` — hardcoded test string, echoes a fixed result
 - `php/testMessage.php` — reads `discord.txt`, `curl_exec` commented out
 - `php/getAllLocations.php` — builds links from every post's GPS, `echo`
   commented out
 
-They are kept in the repo so it mirrors production. Delete them here and
-from the repo together, or leave both — do not delete only one side, or the
-drift starts again.
+`testMessage.php` and `getAllLocations.php` (plus `getUsers.php`,
+`getAllPosts.php`, `checkCharacters.php`, `hidePosts.php`,
+`getDashboardData.php`, `allPosts.php`, `dashboard.html`, `tester.html`
+and `testPrompt.html`) have now been removed from the repo. The deploy sync
+does **not** delete remote files, so delete the corresponding copies from
+the server once.
 
 ---
 

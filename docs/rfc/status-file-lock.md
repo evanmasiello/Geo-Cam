@@ -1,9 +1,7 @@
 # RFC: Replace the status.txt mutex with flock()
 
-> **Status as of 2026-08-21 (code at `0914871`): SUPERSEDED.**
-> Self-marked: the maintainer chose SQLite, which handles locking natively. Retained for reference.
-> Line references below were re-verified against that commit.
-
+> **Status as of 2026-11-14: SUPERSEDED (stopgap applied).**
+> The maintainer chose SQLite. Until that migration lands, every `status.txt` and `logs/logStatus.txt` wait is bounded at 10s and shutdown handlers release the locks, so a stale lock cannot pin a worker indefinitely. The read-then-write lock and non-atomic `file_put_contents` races remain.
 
 ## Problem
 Concurrency between the read-modify-write PHP scripts is serialized by a

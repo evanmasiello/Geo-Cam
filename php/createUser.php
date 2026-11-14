@@ -23,14 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["uname"]) and isset($_
     
     if (strtolower($_POST["uname"]) == "undefined") $charactersAreOk = false;
     
-    error_log("userName = " . $testUname);
     
     for ($v=0; $v < count($blockedWords); $v++) {
         if (str_contains($testUname,$blockedWords[$v])) $containsBlocked = true;
         #error_log("blockedWord = " . $blockedWords[$v]);
     }
     
-    if (preg_match("#^[a-zA-Z0-9äöüÄÖÜ \.\]\_\-\=\+\,\(\)\!\@\#\$\%\&\*\"\'\[]+$#", $_POST["uname"])) {
+    if (strtolower($_POST["uname"]) != "undefined" and preg_match("#^[a-zA-Z0-9äöüÄÖÜ \.\]\_\-\=\+\,\(\)\!\@\#\$\%\&\*\"\'\[]+$#", $_POST["uname"])) {
        $charactersAreOk = true; 
     } else {
         $charactersAreOk = false; 
@@ -70,7 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["uname"]) and isset($_
         
         $uname = htmlspecialchars(trim($_POST['uname']));
         $pass = hash("sha256", $_POST['pass'], false);
-        $email = $_POST['email'];
+        $email = trim($_POST['email']);
+        $emailValid = (filter_var($email, FILTER_VALIDATE_EMAIL) !== false) && !preg_match('/[\r\n]/', $email);
         
         $time = strval(round(microtime(true)));
         
@@ -79,8 +79,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["uname"]) and isset($_
             $jsonDataUsers = file_get_contents($locationUsers);
             
             $jsonArrayUsers = json_decode($jsonDataUsers);
+
+            if (!is_array($jsonArrayUsers)) $jsonArrayUsers = [];
             
-            $userID = $jsonArrayUsers[count($jsonArrayUsers)-1]->id + 1;
+            $userID = 0;
+
+            if (count($jsonArrayUsers) > 0) {
+                $userID = $jsonArrayUsers[count($jsonArrayUsers)-1]->id + 1;
+            }
             
             $userNotExists = true;
             
@@ -103,12 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["uname"]) and isset($_
                     $userNotExists = false;
                     //echo "badEmail";
                     $response = "badEmail";
-                }
-                
-                if (str_contains($emailFilter2, "@") and str_contains($emailFilter2, ".")) {
-                    $emailValid = true;
-                } else {
-                    $emailValid = false;
                 }
             }
             
@@ -267,19 +267,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' and isset($_POST["uname"]) and isset($_
 echo $response;
 
 function sendMessage($msg) {
-$webhookurl = file_get_contents("discord.txt");
+if (!file_exists("discord.txt")) return;
+
+$webhookurl = trim(file_get_contents("discord.txt"));
+
+if ($webhookurl === "") return;
 $timestamp = date("c", strtotime("now"));
 $json_data = json_encode([
     "content" => $msg,
     "tts" => false,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 $ch = curl_init( $webhookurl );
+if ($ch === false) return;
 curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-type: application/json'));
 curl_setopt( $ch, CURLOPT_POST, 1);
 curl_setopt( $ch, CURLOPT_POSTFIELDS, $json_data);
 curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1);
 curl_setopt( $ch, CURLOPT_HEADER, 0);
 curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1);
+// A dead webhook must not pin a PHP worker or the write lock.
+curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, 3);
+curl_setopt( $ch, CURLOPT_TIMEOUT, 5);
+curl_setopt( $ch, CURLOPT_NOSIGNAL, 1);
 $response = curl_exec( $ch );
 curl_close( $ch );
 }
