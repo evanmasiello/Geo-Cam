@@ -3,6 +3,17 @@ header("Access-Control-Allow-Origin: https://geocam.app");
 header("Access-Control-Allow-Credentials: true");
 
 
+function shutdown()
+{
+    global $weOpened, $statusFile;
+    if ($weOpened) file_put_contents($statusFile, "CLOSED");
+}
+
+$weOpened = false;
+
+register_shutdown_function('shutdown');
+
+
 // check if file is able to be written to
 // if yes then set no and proceed
 // if not wait
@@ -13,10 +24,16 @@ if(isset($_POST["image"]) and isset($_POST["lat"]) and isset($_POST["long"]) and
     
     $dataStatus = file_get_contents($statusFile);
     
+    $lockWaitStart = time();
     while ($dataStatus == "OPEN") {
+        // The holder died without releasing: normal hold time is
+        // milliseconds, so treat a lock this old as stale and proceed.
+        if (time() - $lockWaitStart >= 10) break;
         sleep(1);
         $dataStatus = file_get_contents($statusFile);
     }
+    
+    $weOpened = true;
     
     file_put_contents($statusFile, "OPEN");
     
@@ -153,22 +170,41 @@ if(isset($_POST["image"]) and isset($_POST["lat"]) and isset($_POST["long"]) and
         file_put_contents("users.json", json_encode($users)); //generate json file
        
        $response = 1;
-       
-       sendMessage("Epic! " . $users[$userIDgood]->user . " just made a post! Its the " . ordinal($users[$userIDgood]->postCount) . " post that they've made");
-       logAction($users[$userIDgood]->user . " (user id " . $users[$userIDgood]->id . ") made post #" . $id . ", it was the " . ordinal($users[$userIDgood]->postCount) . " post that they made");
-   
+    
     }
     
     echo $response;
     
+// change status file so that data is write able
+   file_put_contents($statusFile, "CLOSED");
+   $weOpened = false;
+   
+   // The post is already saved. Notification and logging are best-effort and
+   // run after the lock is released so a slow webhook cannot delay uploads.
+   if (isset($response) && $response === 1) {
+       if (function_exists('fastcgi_finish_request')) {
+           fastcgi_finish_request();
+       }
+       
+       try {
+           sendMessage("Epic! " . $users[$userIDgood]->user . " just made a post! Its the " . ordinal($users[$userIDgood]->postCount) . " post that they've made");
+       } catch (Throwable $e) {
+       }
+       
+       try {
+           logAction($users[$userIDgood]->user . " (user id " . $users[$userIDgood]->id . ") made post #" . $id . ", it was the " . ordinal($users[$userIDgood]->postCount) . " post that they made");
+       } catch (Throwable $e) {
+       }
+   }
+   
+   exit;
+   
         
     } catch (Throwable $e) {
        //echo 'And my error is: ' . $e->getMessage();
        file_put_contents($statusFile, "CLOSED");
+       $weOpened = false;
     }
-   
-// change status file so that data is write able
-   file_put_contents($statusFile, "CLOSED");
    
    exit;
 }
@@ -213,19 +249,30 @@ function ordinal($number) {
 }
 
 function sendMessage($msg) {
-$webhookurl = file_get_contents("discord.txt");
+if (!file_exists("discord.txt")) return;
+
+$webhookurl = trim(file_get_contents("discord.txt"));
+
+if ($webhookurl === "") return;
+
 $timestamp = date("c", strtotime("now"));
 $json_data = json_encode([
     "content" => $msg,
     "tts" => false,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 $ch = curl_init( $webhookurl );
+if ($ch === false) return;
+
 curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-type: application/json'));
 curl_setopt( $ch, CURLOPT_POST, 1);
 curl_setopt( $ch, CURLOPT_POSTFIELDS, $json_data);
 curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1);
 curl_setopt( $ch, CURLOPT_HEADER, 0);
 curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1);
+// A dead webhook must not pin a PHP worker (and the upload response).
+curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, 3);
+curl_setopt( $ch, CURLOPT_TIMEOUT, 5);
+curl_setopt( $ch, CURLOPT_NOSIGNAL, 1);
 $response = curl_exec( $ch );
 curl_close( $ch );
 }
@@ -241,23 +288,28 @@ function logAction($msgLog) {
     
     $dataStatusLog = file_get_contents($statusFileLog);
     
+    $lockWaitStart = time();
     while ($dataStatusLog == "OPEN") {
+        if (time() - $lockWaitStart >= 10) break;
         sleep(1);
         $dataStatusLog = file_get_contents($statusFileLog);
     }
     
     file_put_contents($statusFileLog, "OPEN");
     
-    if (file_exists($logFile)) {
-        $logContents = file_get_contents($logFile);
-        $logContents = $logContents . "\n" . $timeLog . " " . $msgLog;
-    }  else {
-        $logContents = $timeLog . " " . $msgLog;
+    try {
+        if (file_exists($logFile)) {
+            $logContents = file_get_contents($logFile);
+            $logContents = $logContents . "\n" . $timeLog . " " . $msgLog;
+        }  else {
+            $logContents = $timeLog . " " . $msgLog;
+        }
+        
+        file_put_contents($logFile, $logContents);    
+        chmod($logFile, 0640);
+    } finally {
+        file_put_contents($statusFileLog, "CLOSED");
     }
-    
-    file_put_contents($logFile, $logContents);    
-    chmod($logFile, 0640);
-    file_put_contents($statusFileLog, "CLOSED");
 }
 
 ?>
