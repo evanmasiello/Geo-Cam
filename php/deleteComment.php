@@ -5,6 +5,7 @@ header("Access-Control-Allow-Credentials: true");
 
 function shutdown()
 {
+    global $weOpened, $statusFile;
     if ($weOpened) file_put_contents($statusFile, "CLOSED");
 }
 
