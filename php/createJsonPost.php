@@ -288,9 +288,10 @@ function logAction($msgLog) {
     
     $dataStatusLog = file_get_contents($statusFileLog);
     
-    $lockWaitStart = time();
+    $lockWaitStartLog = time();
     while ($dataStatusLog == "OPEN") {
-        if (time() - $lockWaitStart >= 10) break;
+        // A stale log lock must not stall a write while status.txt is held.
+        if (time() - $lockWaitStartLog >= 10) break;
         sleep(1);
         $dataStatusLog = file_get_contents($statusFileLog);
     }
